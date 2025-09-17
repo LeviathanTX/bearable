@@ -147,13 +147,6 @@ export class DocumentStorage {
       .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
   }
 
-  /**
-   * Get all documents (for debugging purposes)
-   */
-  getAllDocuments(): StoredDocument[] {
-    return Array.from(this.documents.values())
-      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-  }
 
   /**
    * Search documents by text content

@@ -205,7 +205,7 @@ export type AdvisorExpertise =
   // Industry Specializations
   | 'SaaS Metrics' | 'Healthcare Economics' | 'Banking Regulations' | 'Manufacturing Processes' | 'Consumer Behavior' | 'Energy Markets'
   // Legacy Support
-  | 'Strategy' | 'Finance' | 'Marketing' | 'Operations' | 'Technology' | 'Sales' | 'Product Development' | 'Legal' | 'HR' | 'International Business' | 'Venture Capital' | 'Private Equity' | 'Investment Banking' | 'Startups' | 'Manufacturing' | 'Healthcare' | 'Fintech' | 'E-commerce' | 'Real Estate' | 'Cybersecurity';
+  | 'Strategy' | 'Finance' | 'Marketing' | 'Operations' | 'Technology' | 'Sales' | 'Product Development' | 'Legal' | 'HR' | 'International Business' | 'Venture Capital' | 'Private Equity' | 'Investment Banking' | 'Startups' | 'Manufacturing' | 'Healthcare' | 'Fintech' | 'E-commerce' | 'Real Estate' | 'Cybersecurity' | 'SaaS' | 'AI/ML';
 
 export interface Advisor {
   id: string;

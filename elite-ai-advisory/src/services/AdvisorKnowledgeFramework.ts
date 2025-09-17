@@ -592,7 +592,7 @@ function getFrameworksForExpertise(expertise: string[]): string[] {
     }
   });
 
-  return [...new Set(applicableFrameworks)]; // Remove duplicates
+  return Array.from(new Set(applicableFrameworks)); // Remove duplicates
 }
 
 function getRoleSpecificApproach(role: AdvisorRole): string {
