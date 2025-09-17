@@ -631,12 +631,12 @@ DOCUMENT CONTEXT:
 ${documentContextString}
 ${uploadedFileContent}
 
-Based on the documents provided and your expertise, please analyze and respond to: ${userInput}`;
+Based on the documents provided and your expertise, please analyze and respond to the user's question or request.`;
           }
 
           const response = await advisorAI.generateResponseWithCustomPrompt(
             enhancedPrompt,
-            hasDocumentContext ? '' : userInput, // If we included userInput in prompt, don't repeat it
+            userInput, // Always pass user input as the message content
             { maxTokens: 2000 } // Increased for more detailed analysis
           );
 
