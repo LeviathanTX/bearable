@@ -17,7 +17,7 @@ class EnvironmentConfig {
     this.env = {
       NODE_ENV: (process.env.NODE_ENV as Environment['NODE_ENV']) || 'development',
       API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001',
-      USE_MOCK_AI: process.env.REACT_APP_USE_MOCK_AI === 'true' || process.env.NODE_ENV === 'development',
+      USE_MOCK_AI: process.env.REACT_APP_USE_MOCK_AI === 'true',
       ENABLE_ANALYTICS: process.env.REACT_APP_ENABLE_ANALYTICS === 'true' && process.env.NODE_ENV === 'production',
       DEBUG_MODE: process.env.REACT_APP_DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development'
     };
