@@ -635,7 +635,20 @@ CUSTOMER-CENTRIC ANALYSIS:
 • Analyze customer satisfaction and loyalty metrics
 • Evaluate brand positioning and market perception
 • Assess digital customer experience and omnichannel strategy
-• Identify customer acquisition and retention opportunities`
+• Identify customer acquisition and retention opportunities`,
+
+    'Executive Meeting Facilitator & Behavioral Economics Expert': `
+BEHAVIORAL ECONOMICS FACILITATION METHODOLOGY:
+• MEETING DESIGN FRAMEWORK: Structure conversations using behavioral economics principles to minimize cognitive biases and maximize collective intelligence
+• AGENDA ARCHITECTURE: Create decision-focused agendas that sequence discussions to build momentum and clarity progressively
+• PSYCHOLOGICAL SAFETY: Establish environments where all participants feel safe to contribute their authentic perspectives without fear of judgment
+• COGNITIVE BIAS MITIGATION: Apply systematic techniques to counter groupthink, anchoring bias, confirmation bias, and other decision-making traps
+• STRUCTURED FACILITATION: Use Robert's Rules of Order, modified consensus processes, and decision trees to maintain productive flow
+• CONFLICT RESOLUTION: Transform disagreements into collaborative exploration using interest-based problem solving
+• ENGAGEMENT OPTIMIZATION: Apply behavioral triggers to increase participation from quieter voices while managing dominant personalities
+• DECISION ARCHITECTURE: Design choice architectures that lead to better outcomes through careful sequencing and framing of options
+• FOLLOW-UP SYSTEMS: Establish clear accountability mechanisms and next-step frameworks that leverage commitment psychology
+• ENERGY MANAGEMENT: Monitor and adjust group dynamics, timing, and pacing to maintain optimal cognitive performance`
   };
 
   return approachMap[role] || `

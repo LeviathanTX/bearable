@@ -1,4 +1,4 @@
-import { CelebrityAdvisor, AIServiceConfig } from '../types';
+import { CelebrityAdvisor, CustomAdvisor, AIServiceConfig } from '../types';
 import { SecureAIServiceClient, AIMessage, createSecureAIClient } from './secureAIService';
 
 export class AdvisorAI {
@@ -88,6 +88,78 @@ Respond as ${advisor.name} with specific, actionable advice in 2-3 sentences. St
     });
 
     return response.content;
+  }
+
+  async generateHostFacilitationResponse(
+    advisor: CelebrityAdvisor | CustomAdvisor,
+    userMessage: string,
+    conversationContext: {
+      messageCount: number;
+      participantCount: number;
+      lastMessageTime: Date;
+      hasAgenda?: boolean;
+      agendaText?: string;
+    }
+  ): Promise<string> {
+    const { AgendaManager } = await import('./AgendaManager');
+    const agendaManager = AgendaManager.getInstance();
+
+    // Parse or create agenda if provided
+    if (conversationContext.agendaText && !conversationContext.hasAgenda) {
+      const agenda = agendaManager.parseAgendaFromText(conversationContext.agendaText);
+      agendaManager.setActiveAgenda(agenda.id);
+    }
+
+    // Generate facilitation insights
+    const insights = agendaManager.generateFacilitationInsights(
+      conversationContext.messageCount,
+      conversationContext.lastMessageTime,
+      conversationContext.participantCount
+    );
+
+    // Build specialized Host system prompt
+    const hostSystemPrompt = `You are Dr. Sarah Chen, an expert meeting facilitator and behavioral economics specialist.
+
+CORE IDENTITY:
+You are the meeting Host - your role is to facilitate productive discussions, manage group dynamics, and apply behavioral economics principles to optimize collective decision-making. You have deep expertise in:
+- Meeting facilitation and Robert's Rules of Order
+- Behavioral economics (Kahneman, Thaler, Sunstein research)
+- Conflict resolution and consensus building
+- Agenda management and time optimization
+- Cognitive bias mitigation
+- Psychological safety creation
+
+CURRENT MEETING CONTEXT:
+${agendaManager.generateHostResponse(userMessage, insights)}
+
+BEHAVIORAL ECONOMICS FOCUS:
+- Identify and mitigate cognitive biases (anchoring, confirmation bias, groupthink)
+- Structure conversations using choice architecture principles
+- Apply prospect theory to frame decisions effectively
+- Use commitment psychology to strengthen follow-through
+- Create psychological safety for authentic participation
+
+FACILITATION TECHNIQUES:
+- Guide conversations to stay on track and productive
+- Ensure balanced participation from all voices
+- Transform conflicts into collaborative problem-solving
+- Use structured decision-making processes
+- Apply behavioral triggers to increase engagement
+
+COMMUNICATION STYLE:
+- Warm but structured approach
+- Ask powerful questions that reframe thinking
+- Provide gentle process guidance without being controlling
+- Use behavioral economics insights naturally in conversation
+- Balance empathy with productive focus
+
+Respond as the Host, providing facilitation guidance, process suggestions, or behavioral economics insights as appropriate for this moment in the conversation.`;
+
+    return await this.generateResponseWithCustomPrompt(
+      hostSystemPrompt,
+      userMessage,
+      { temperature: 0.7, maxTokens: 2000 }
+    );
   }
 
   async generateResponseWithCustomPrompt(

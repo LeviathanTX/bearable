@@ -158,9 +158,25 @@ export const OptimizedAdvisoryConversation = memo(function OptimizedAdvisoryConv
           });
 
           try {
-            // Build system prompt for advisor
-            const bio = (advisor as any).bio || (advisor as any).background_context || '';
-            const systemPrompt = `You are ${advisor.name}, ${advisor.title}${advisor.company ? ` at ${advisor.company}` : ''}. ${bio}
+            let response: string;
+
+            // Handle Host advisor specially with behavioral economics and facilitation
+            if (advisor.id === 'the-host') {
+              response = await advisorAI.generateHostFacilitationResponse(
+                advisor,
+                content,
+                {
+                  messageCount: activeConversation.messages.length,
+                  participantCount: Math.max(selectedAdvisorData.length, 1),
+                  lastMessageTime: new Date(),
+                  hasAgenda: false, // TODO: Implement agenda detection
+                  agendaText: undefined // TODO: Extract agenda from documents or conversation
+                }
+              );
+            } else {
+              // Regular advisor response
+              const bio = (advisor as any).bio || (advisor as any).background_context || '';
+              const systemPrompt = `You are ${advisor.name}, ${advisor.title}${advisor.company ? ` at ${advisor.company}` : ''}. ${bio}
 
 Your communication style: ${advisor.communication_style || (advisor as any).personality_description || 'Professional and insightful'}
 
@@ -170,11 +186,12 @@ ${documents.length > 0 ? `Documents provided:\n${documents.map((doc, i) => `Docu
 
 Please provide advice in your characteristic style and expertise.`;
 
-            const response = await advisorAI.generateResponseWithCustomPrompt(
-              systemPrompt,
-              content,
-              { maxTokens: 2000, temperature: 0.7 }
-            );
+              response = await advisorAI.generateResponseWithCustomPrompt(
+                systemPrompt,
+                content,
+                { maxTokens: 2000, temperature: 0.7 }
+              );
+            }
 
             // Update message with response
             updateMessage(activeConversation.id, loadingMessageId, {

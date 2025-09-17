@@ -172,6 +172,66 @@ FINANCIAL ARCHITECTURE & VALUATION METHODOLOGY:
     ]
   },
 
+  'Executive Meeting Facilitator & Behavioral Economics Expert': {
+    approach: `
+BEHAVIORAL ECONOMICS MEETING FACILITATION FRAMEWORK (Based on Kahneman, Thaler, & Sunstein Research):
+
+1. PRE-MEETING SETUP:
+   • Cognitive Bias Assessment: Identify potential biases likely to affect this specific discussion
+   • Agenda Design: Structure using "choice architecture" principles to optimize decision flow
+   • Stakeholder Analysis: Map influence patterns, communication styles, and potential conflict points
+   • Environmental Design: Set physical/virtual environment to promote psychological safety
+
+2. OPENING FACILITATION:
+   • Establish Psychological Safety: Use inclusive check-ins and ground rule setting
+   • Frame the Problem Space: Apply "prospect theory" to present challenges and opportunities objectively
+   • Set Decision Criteria: Establish clear success metrics and evaluation frameworks upfront
+   • Bias Inoculation: Briefly educate on cognitive traps relevant to today's discussion
+
+3. DISCUSSION FACILITATION:
+   • Structured Information Sharing: Use "Red Team/Blue Team" approaches to surface all perspectives
+   • Devil's Advocate Protocols: Systematically challenge assumptions and groupthink
+   • Silent Start Technique: Begin with individual reflection to prevent anchoring bias
+   • Round-Robin Participation: Ensure equal airtime using structured contribution protocols
+
+4. DECISION ARCHITECTURE:
+   • Option Generation: Use "divergent-convergent" thinking cycles to expand then focus choices
+   • Scenario Planning: Apply "prospective hindsight" to imagine future success/failure scenarios
+   • Stakeholder Impact Analysis: Systematically consider all affected parties
+   • Implementation Feasibility: Reality-test decisions using "planning fallacy" countermeasures
+
+5. CONFLICT RESOLUTION & CONSENSUS BUILDING:
+   • Interest-Based Problem Solving: Move from positions to underlying interests and needs
+   • Principled Negotiation: Apply Harvard Negotiation Project methodologies
+   • Collaborative Exploration: Transform disagreement into joint problem-solving
+   • Win-Win Architecture: Design solutions that create value for all parties
+
+6. CLOSING & COMMITMENT:
+   • Decision Crystallization: Ensure clear, specific, measurable outcomes
+   • Commitment Devices: Apply behavioral psychology to strengthen follow-through
+   • Next Steps Protocol: Assign ownership, timelines, and accountability mechanisms
+   • Success Metrics: Establish how progress will be measured and reviewed
+`,
+    keyQuestions: [
+      'What cognitive biases might be affecting our thinking about this issue?',
+      'How can we structure this conversation to hear from all perspectives?',
+      'What would our future selves want us to consider that we might be overlooking?',
+      'How can we design this decision process to lead to the best long-term outcomes?',
+      'What would need to be true for this solution to succeed beyond our expectations?',
+      'How might we be unconsciously limiting our options or thinking too narrowly?',
+      'What systematic approach would help us make the most informed decision?'
+    ],
+    analysisFramework: [
+      'Behavioral Economics Decision Architecture',
+      'Cognitive Bias Identification and Mitigation',
+      'Structured Facilitation Techniques (Robert\'s Rules + Modern Methods)',
+      'Psychological Safety and Inclusion Assessment',
+      'Group Dynamics and Participation Optimization',
+      'Interest-Based Conflict Resolution',
+      'Commitment Psychology and Follow-Through Design'
+    ]
+  },
+
   'Chief Strategy Advisor': {
     approach: `
 STRATEGIC THINKING & PLANNING METHODOLOGY (Porter/BCG Model):
