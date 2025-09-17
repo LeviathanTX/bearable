@@ -6,6 +6,7 @@ import { AdvisorEditModal } from '../Modals/AdvisorEditModal';
 import { ConfirmationModal } from '../Modals/ConfirmationModal';
 import { Avatar } from '../Common/Avatar';
 import { Advisor, AIService, CelebrityAdvisor, CustomAdvisor } from '../../types';
+import { cn } from '../../utils';
 
 interface AdvisorManagementProps {
   onBack: () => void;
@@ -77,6 +78,7 @@ export function AdvisorManagement({ onBack }: AdvisorManagementProps) {
       case 'chatgpt': return '🧠';
       case 'gemini': return '💎';
       case 'deepseek': return '🔮';
+      case 'groq': return '⚡';
       default: return '🤖';
     }
   };
@@ -206,10 +208,16 @@ export function AdvisorManagement({ onBack }: AdvisorManagementProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAdvisors.map(advisor => {
             const isCelebrity = celebrityAdvisors.includes(advisor as any);
+            const isHost = advisor.id === 'the-host';
             const aiServiceStatus = getAIServiceStatus(advisor.ai_service || 'claude');
-            
+
             return (
-              <div key={advisor.id} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div key={advisor.id} className={cn(
+                "rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow",
+                isHost
+                  ? "bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg ring-2 ring-amber-200"
+                  : "bg-white"
+              )}>
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -220,14 +228,25 @@ export function AdvisorManagement({ onBack }: AdvisorManagementProps) {
                       size="lg"
                     />
                     <div>
-                      <h3 className="font-semibold text-gray-900">{advisor.name}</h3>
-                      <p className="text-sm text-gray-600">{advisor.role}</p>
+                      <h3 className={cn(
+                        "font-semibold",
+                        isHost ? "text-amber-900" : "text-gray-900"
+                      )}>{advisor.name}</h3>
+                      <p className={cn(
+                        "text-sm",
+                        isHost ? "text-amber-700" : "text-gray-600"
+                      )}>{advisor.role}</p>
                     </div>
                   </div>
                   <div className="flex space-x-1">
+                    {isHost && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white">
+                        HOST
+                      </span>
+                    )}
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      isCelebrity 
-                        ? 'bg-blue-100 text-blue-800' 
+                      isCelebrity
+                        ? 'bg-blue-100 text-blue-800'
                         : 'bg-purple-100 text-purple-800'
                     }`}>
                       {isCelebrity ? 'Celebrity' : 'Custom'}

@@ -168,7 +168,7 @@ export interface ConversationMessage {
 
 export type ApplicationMode = 'pitch_practice' | 'advisory_conversation' | 'advisor_management' | 'strategic_planning' | 'due_diligence' | 'quick_consultation' | 'test_document';
 
-export type AIService = 'claude' | 'gemini' | 'chatgpt' | 'deepseek';
+export type AIService = 'claude' | 'gemini' | 'chatgpt' | 'deepseek' | 'groq';
 
 // Unified Advisor Types
 export type AdvisorRole =

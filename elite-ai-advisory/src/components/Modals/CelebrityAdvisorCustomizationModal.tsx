@@ -90,6 +90,7 @@ Always provide specific, actionable advice that reflects your unique perspective
       case 'chatgpt': return '🧠';
       case 'gemini': return '💎';
       case 'deepseek': return '🔮';
+      case 'groq': return '⚡';
       default: return '🤖';
     }
   };

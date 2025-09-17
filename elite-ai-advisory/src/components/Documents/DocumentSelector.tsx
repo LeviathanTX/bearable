@@ -159,6 +159,28 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
             </div>
             <div className="flex space-x-2">
               <button
+                onClick={() => {
+                  // Create file input and trigger it
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = '.pdf,.doc,.docx,.txt,.md';
+                  input.onchange = (e) => {
+                    const files = (e.target as HTMLInputElement).files;
+                    if (files) {
+                      // Handle file upload here - this would integrate with existing upload logic
+                      console.log('Files selected for upload:', Array.from(files).map(f => f.name));
+                      // TODO: Integrate with document upload functionality
+                    }
+                  };
+                  input.click();
+                }}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-green-600 hover:bg-green-50 rounded-lg border border-green-200"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload</span>
+              </button>
+              <button
                 onClick={selectAllFiltered}
                 className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
                 disabled={filteredDocuments.length === 0}

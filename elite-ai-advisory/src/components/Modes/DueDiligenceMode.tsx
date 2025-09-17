@@ -536,25 +536,44 @@ INSTRUCTIONS:
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {advisors.slice(0, 12).map((advisor) => {
                 const isSelected = selectedAdvisors.includes(advisor.id);
+                const isHost = advisor.id === 'the-host';
                 return (
                   <button
                     key={advisor.id}
                     onClick={() => toggleAdvisor(advisor.id)}
                     className={cn(
-                      "p-3 rounded-lg border-2 text-left transition-all",
-                      isSelected
+                      "p-3 rounded-lg border-2 text-left transition-all relative",
+                      isHost && !isSelected
+                        ? "border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-lg ring-2 ring-amber-200"
+                        : isHost && isSelected
+                        ? "border-amber-500 bg-gradient-to-br from-amber-100 to-yellow-100 shadow-lg ring-2 ring-amber-300"
+                        : isSelected
                         ? "border-green-500 bg-green-50"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
+                    {isHost && (
+                      <div className="absolute top-1 right-1 px-1 py-0.5 bg-amber-500 text-white text-xs font-semibold rounded">
+                        HOST
+                      </div>
+                    )}
                     <div className="flex items-center space-x-3">
                       <div className="text-2xl">{(advisor as any).avatar_emoji || '👤'}</div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 truncate">{advisor.name}</p>
-                        <p className="text-xs text-gray-600 truncate">{(advisor as any).role || (advisor as any).title}</p>
+                        <p className={cn(
+                          "font-medium truncate",
+                          isHost ? "text-amber-900" : "text-gray-900"
+                        )}>{advisor.name}</p>
+                        <p className={cn(
+                          "text-xs truncate",
+                          isHost ? "text-amber-700" : "text-gray-600"
+                        )}>{(advisor as any).role || (advisor as any).title}</p>
                       </div>
                       {isSelected && (
-                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        <CheckCircle className={cn(
+                          "w-5 h-5 flex-shrink-0",
+                          isHost ? "text-amber-500" : "text-green-500"
+                        )} />
                       )}
                     </div>
                   </button>

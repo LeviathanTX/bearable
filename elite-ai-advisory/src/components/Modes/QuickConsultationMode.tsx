@@ -573,25 +573,52 @@ export const QuickConsultationMode: React.FC<QuickConsultationModeProps> = ({ on
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {celebrityAdvisors.map((advisor) => {
                 const isSelected = selectedAdvisors.includes(advisor.id);
+                const isHost = advisor.id === 'the-host';
                 return (
                   <button
                     key={advisor.id}
                     onClick={() => toggleAdvisor(advisor.id)}
                     className={cn(
                       "p-4 border-2 rounded-xl text-left transition-all relative",
-                      isSelected
+                      isHost && !isSelected
+                        ? "border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-lg ring-2 ring-amber-200"
+                        : isHost && isSelected
+                        ? "border-amber-500 bg-gradient-to-br from-amber-100 to-yellow-100 shadow-lg ring-2 ring-amber-300"
+                        : isSelected
                         ? "border-orange-500 bg-orange-50"
                         : "border-gray-200 hover:border-orange-300"
                     )}
                   >
+                    {isHost && (
+                      <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-semibold rounded-full">
+                        HOST
+                      </div>
+                    )}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                      <div className={cn(
+                        "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center",
+                        isHost ? "bg-amber-500" : "bg-orange-500"
+                      )}>
                         <span className="text-white text-sm">✓</span>
                       </div>
                     )}
-                    <div className="font-semibold text-gray-900">{advisor.name}</div>
-                    <div className="text-sm text-gray-600">{advisor.title}</div>
-                    <div className="text-sm text-gray-500 mt-1">{advisor.company}</div>
+                    <div className={cn(
+                      "font-semibold",
+                      isHost ? "text-amber-900 mt-6" : "text-gray-900"
+                    )}>{advisor.name}</div>
+                    <div className={cn(
+                      "text-sm",
+                      isHost ? "text-amber-700" : "text-gray-600"
+                    )}>{advisor.title}</div>
+                    <div className={cn(
+                      "text-sm mt-1",
+                      isHost ? "text-amber-600" : "text-gray-500"
+                    )}>{advisor.company}</div>
+                    {isHost && (
+                      <div className="text-xs text-amber-700 mt-2 font-medium">
+                        🎯 Meeting Facilitation • Behavioral Economics
+                      </div>
+                    )}
                   </button>
                 );
               })}

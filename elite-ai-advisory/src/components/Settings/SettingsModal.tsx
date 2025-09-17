@@ -37,6 +37,13 @@ const AI_SERVICE_OPTIONS = [
     baseUrl: 'https://api.deepseek.com',
     model: 'deepseek-chat',
     placeholder: 'sk-...'
+  },
+  {
+    id: 'groq' as AIService,
+    name: 'Groq',
+    baseUrl: 'https://api.groq.com',
+    model: 'llama3-70b-8192',
+    placeholder: 'gsk_...'
   }
 ];
 

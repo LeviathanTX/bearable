@@ -66,11 +66,11 @@ export function AdvisoryConversation({ onBack, initialMode = 'general', conversa
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [enhancedSettings, setEnhancedSettings] = useState<EnhancedMeetingSettings>({
-    enableDebate: true,
-    enableConsensusBuilding: true,
-    discussionRounds: 2,
-    includeDocumentAnalysis: true,
-    autoSummary: true
+    enableDebate: false,
+    enableConsensusBuilding: false,
+    discussionRounds: 1,
+    includeDocumentAnalysis: false,
+    autoSummary: false
   });
   const [isRecording, setIsRecording] = useState(false);
   const [showAdvisorPanel, setShowAdvisorPanel] = useState(true);
@@ -1093,10 +1093,69 @@ The committee unanimously recommends proceeding with measured optimism while sys
               <span className="text-sm text-gray-600">
                 {selectedAdvisors.length} advisor{selectedAdvisors.length !== 1 ? 's' : ''} selected
               </span>
-              <button className="p-2 rounded-lg hover:bg-gray-100">
+              <button
+                onClick={() => {
+                  // Share functionality
+                  const conversationData = {
+                    title: `Advisory Session - ${currentMode?.name}`,
+                    advisors: selectedAdvisors.map(id => celebrityAdvisors.find(a => a.id === id)?.name).filter(Boolean).join(', '),
+                    messages: messages,
+                    timestamp: new Date().toISOString()
+                  };
+
+                  if (navigator.share) {
+                    navigator.share({
+                      title: conversationData.title,
+                      text: `Conversation with ${conversationData.advisors}\n\n${messages.map(m => `${m.role === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`,
+                    }).catch(console.error);
+                  } else {
+                    // Fallback: copy to clipboard
+                    const shareText = `${conversationData.title}\nAdvisors: ${conversationData.advisors}\n\n${messages.map(m => `${m.role === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`;
+                    navigator.clipboard.writeText(shareText).then(() => {
+                      alert('Conversation copied to clipboard!');
+                    }).catch(() => {
+                      alert('Could not share conversation');
+                    });
+                  }
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100"
+                title="Share conversation"
+              >
                 <Share2 className="w-4 h-4" />
               </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100">
+              <button
+                onClick={() => {
+                  // Download functionality
+                  const conversationData = {
+                    title: `Advisory Session - ${currentMode?.name}`,
+                    advisors: selectedAdvisors.map(id => celebrityAdvisors.find(a => a.id === id)?.name).filter(Boolean).join(', '),
+                    messages: messages,
+                    timestamp: new Date().toISOString(),
+                    mode: currentMode?.name
+                  };
+
+                  const chatText = `${conversationData.title}
+Generated: ${new Date(conversationData.timestamp).toLocaleString()}
+Mode: ${conversationData.mode}
+Advisors: ${conversationData.advisors}
+
+${'='.repeat(50)}
+
+${messages.map(m => `${m.role === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`;
+
+                  const blob = new Blob([chatText], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `advisory-session-${new Date().toISOString().split('T')[0]}.txt`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100"
+                title="Download conversation"
+              >
                 <Download className="w-4 h-4" />
               </button>
             </div>
