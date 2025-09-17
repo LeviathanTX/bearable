@@ -1,11 +1,11 @@
 import { CelebrityAdvisor, AIServiceConfig } from '../types';
-import { AIServiceClient, AIMessage, createAIClient } from './aiService';
+import { SecureAIServiceClient, AIMessage, createSecureAIClient } from './secureAIService';
 
 export class AdvisorAI {
-  private client: AIServiceClient;
+  private client: SecureAIServiceClient;
 
   constructor(config: AIServiceConfig) {
-    this.client = createAIClient(config);
+    this.client = createSecureAIClient(config);
   }
 
   async generatePitchFeedback(
