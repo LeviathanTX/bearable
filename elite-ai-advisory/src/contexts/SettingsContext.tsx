@@ -42,6 +42,13 @@ const DEFAULT_SETTINGS: AppSettings = {
       apiKey: '',
       baseUrl: 'https://api.deepseek.com',
       model: 'deepseek-chat'
+    },
+    groq: {
+      id: 'groq',
+      name: 'Groq',
+      apiKey: '',
+      baseUrl: 'https://api.groq.com',
+      model: 'llama3-70b-8192'
     }
   },
   defaultAIService: 'claude'

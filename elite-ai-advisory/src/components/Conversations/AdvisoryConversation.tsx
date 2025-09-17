@@ -1106,11 +1106,11 @@ The committee unanimously recommends proceeding with measured optimism while sys
                   if (navigator.share) {
                     navigator.share({
                       title: conversationData.title,
-                      text: `Conversation with ${conversationData.advisors}\n\n${messages.map(m => `${m.role === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`,
+                      text: `Conversation with ${conversationData.advisors}\n\n${messages.map(m => `${m.type === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`,
                     }).catch(console.error);
                   } else {
                     // Fallback: copy to clipboard
-                    const shareText = `${conversationData.title}\nAdvisors: ${conversationData.advisors}\n\n${messages.map(m => `${m.role === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`;
+                    const shareText = `${conversationData.title}\nAdvisors: ${conversationData.advisors}\n\n${messages.map(m => `${m.type === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`;
                     navigator.clipboard.writeText(shareText).then(() => {
                       alert('Conversation copied to clipboard!');
                     }).catch(() => {
@@ -1141,7 +1141,7 @@ Advisors: ${conversationData.advisors}
 
 ${'='.repeat(50)}
 
-${messages.map(m => `${m.role === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`;
+${messages.map(m => `${m.type === 'user' ? 'You' : 'Advisor'}: ${m.content}`).join('\n\n')}`;
 
                   const blob = new Blob([chatText], { type: 'text/plain' });
                   const url = URL.createObjectURL(blob);
