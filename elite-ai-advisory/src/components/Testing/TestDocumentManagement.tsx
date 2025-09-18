@@ -15,7 +15,7 @@ export const TestDocumentManagement: React.FC = () => {
     id: 'test-advisor-1',
     name: 'Test Advisor',
     role: 'CEO',
-    expertise: ['Strategy' as AdvisorExpertise, 'Finance' as AdvisorExpertise],
+    expertise: ['Strategy', 'Finance'] as AdvisorExpertise[],
     personality: 'Professional and analytical',
     avatar_emoji: '👨‍💼',
     background: 'Experienced business leader',
@@ -25,7 +25,7 @@ export const TestDocumentManagement: React.FC = () => {
     mcp_folder_path: '/documents/test-advisor',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
-  } as Advisor;
+  };
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">

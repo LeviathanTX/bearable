@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { HelpCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { useAdvisor } from '../../contexts/AdvisorContext';
+import { useHelp } from '../../contexts/HelpContext';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { TestDocumentManagement } from '../Testing/TestDocumentManagement';
+import { HelpModal } from '../Help/HelpModal';
+import { DemoTour } from '../Help/DemoTour';
+import { OnboardingFlow } from '../Help/OnboardingFlow';
+import { QuickStartGuide } from '../Help/QuickStartGuide';
 import { cn, formatCurrency, calculatePercentage } from '../../utils';
 import { ApplicationMode } from '../../types';
 
@@ -15,10 +21,75 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
   const { user, signOut } = useAuth();
   const { currentTier, limits, usage, pricing } = useSubscription();
   const { celebrityAdvisors, customAdvisors, conversations } = useAdvisor();
+  const {
+    showHelpModal,
+    showOnboarding,
+    showDemoTour,
+    helpSection,
+    setShowHelpModal,
+    setShowOnboarding,
+    setShowDemoTour,
+    markOnboardingComplete,
+    markDemoTourComplete
+  } = useHelp();
   const [showSettings, setShowSettings] = useState(false);
   const [showTestDocument, setShowTestDocument] = useState(false);
-  
+  const [showQuickStart, setShowQuickStart] = useState(false);
+  const [localConversations, setLocalConversations] = useState<any[]>([]);
+
   const isDemoMode = !process.env.REACT_APP_SUPABASE_URL;
+
+  // Load conversations from localStorage in demo mode
+  const loadLocalConversations = () => {
+    const saved: any[] = [];
+
+    console.log('Dashboard: Loading conversations from localStorage...');
+    console.log('Total localStorage items:', localStorage.length);
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('conversation-')) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key) || '');
+          console.log('Dashboard: Found conversation:', key, data);
+          saved.push({
+            id: data.id,
+            title: data.title || 'Untitled Conversation',
+            mode: data.mode || 'general',
+            advisor_type: 'celebrity', // Default for now
+            advisor_id: data.advisors?.[0]?.id || 'unknown',
+            messages: data.messages || [],
+            updated_at: data.lastUpdated || new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error('Error loading conversation:', error);
+        }
+      }
+    }
+
+    console.log('Dashboard: Loaded conversations:', saved);
+    setLocalConversations(saved.sort((a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    ));
+  };
+
+  useEffect(() => {
+    if (isDemoMode) {
+      loadLocalConversations();
+
+      // Listen for localStorage changes to keep conversations in sync
+      const handleStorageChange = () => {
+        loadLocalConversations();
+      };
+
+      // Check for new conversations periodically
+      const interval = setInterval(loadLocalConversations, 5000);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [isDemoMode]);
 
   const modes: { 
     id: ApplicationMode; 
@@ -56,7 +127,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dashboard-main">
       {isDemoMode && (
         <div className="bg-yellow-500 text-black text-center py-2 px-4 text-sm font-medium">
           🚀 DEMO MODE - All features are simulated for demonstration
@@ -84,12 +155,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
               <button
                 onClick={() => onModeSelect('advisor_management')}
                 className="text-purple-600 hover:text-purple-700 font-medium"
+                data-tour="advisor-management"
               >
                 Manage Advisors
               </button>
               <button
+                onClick={() => setShowQuickStart(true)}
+                className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
+                title="Quick Start Guide"
+              >
+                <HelpCircle className="w-4 h-4 mr-1" />
+                Quick Start
+              </button>
+              <button
+                onClick={() => setShowHelpModal(true)}
+                className="text-gray-500 hover:text-gray-700 font-medium"
+                title="Help & Support"
+              >
+                Help
+              </button>
+              <button
                 onClick={() => setShowSettings(true)}
                 className="text-gray-500 hover:text-gray-700"
+                data-tour="settings"
               >
                 Settings
               </button>
@@ -106,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Usage Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 usage-stats">
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h3 className="text-sm font-medium text-gray-500 mb-2">AI Advisor Hours</h3>
             <div className="text-2xl font-bold text-gray-900 mb-2">
@@ -173,14 +261,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
         </div>
 
         {/* Application Modes */}
-        <div className="mb-8">
+        <div className="mb-8 advisory-modes">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Your Advisory Mode</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {modes.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => {
-                  if ((mode.id as string) === 'test_document') {
+                  if (mode.id === 'test_document') {
                     setShowTestDocument(true);
                   } else {
                     onModeSelect(mode.id);
@@ -206,9 +294,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
           {/* Recent Conversations */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Conversations</h3>
-            {conversations.length > 0 ? (
+            {(isDemoMode ? localConversations : conversations).length > 0 ? (
               <div className="space-y-3">
-                {conversations.slice(0, 5).map((conversation) => {
+                {(isDemoMode ? localConversations : conversations).slice(0, 5).map((conversation) => {
                   const advisor = conversation.advisor_type === 'celebrity'
                     ? celebrityAdvisors.find(a => a.id === conversation.advisor_id)
                     : customAdvisors.find(a => a.id === conversation.advisor_id);
@@ -240,7 +328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
           </div>
 
           {/* Available Advisors */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm available-advisors">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Advisors</h3>
             <div className="space-y-3">
               {celebrityAdvisors.slice(0, 6).map((advisor) => (
@@ -295,6 +383,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ onModeSelect }) => {
           </div>
         </div>
       )}
+
+      {/* Help System Modals */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        initialSection={helpSection}
+      />
+
+      <OnboardingFlow
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={(preferences) => {
+          markOnboardingComplete(preferences);
+          console.log('Onboarding completed with preferences:', preferences);
+        }}
+      />
+
+      <DemoTour
+        isOpen={showDemoTour}
+        onClose={() => setShowDemoTour(false)}
+        onComplete={() => {
+          markDemoTourComplete();
+          console.log('Demo tour completed');
+        }}
+      />
+
+      <QuickStartGuide
+        isOpen={showQuickStart}
+        onClose={() => setShowQuickStart(false)}
+        onStartDemo={() => {
+          setShowQuickStart(false);
+          setShowDemoTour(true);
+        }}
+        onStartConversation={() => {
+          setShowQuickStart(false);
+          onModeSelect('advisory_conversation');
+        }}
+      />
     </div>
   );
 };

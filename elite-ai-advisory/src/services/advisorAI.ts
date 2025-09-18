@@ -1,5 +1,6 @@
 import { CelebrityAdvisor, CustomAdvisor, AIServiceConfig } from '../types';
 import { SecureAIServiceClient, AIMessage, createSecureAIClient } from './secureAIService';
+import { AudioFeatures, VocalDeliveryInsights } from './AudioAnalysisEngine';
 
 export class AdvisorAI {
   private client: SecureAIServiceClient;
@@ -11,12 +12,23 @@ export class AdvisorAI {
   async generatePitchFeedback(
     advisor: CelebrityAdvisor,
     pitchText: string,
-    analysisType?: string
+    analysisType?: string,
+    voiceMetrics?: {
+      wordsPerMinute: number;
+      fillerWords: number;
+      confidenceLevel: number;
+      clarityScore: number;
+      duration: number;
+    },
+    audioFeatures?: AudioFeatures,
+    vocalInsights?: VocalDeliveryInsights
   ): Promise<{
     feedback: string;
     strengths: string[];
     improvements: string[];
     overallScore: number;
+    deliveryScore?: number;
+    contentScore?: number;
   }> {
     const systemPrompt = this.buildAdvisorSystemPrompt(advisor, 'pitch_analysis');
     
@@ -32,11 +44,62 @@ export class AdvisorAI {
   "feedback": "detailed feedback paragraph as ${advisor.name}",
   "strengths": ["strength 1", "strength 2", "strength 3"],
   "improvements": ["improvement 1", "improvement 2", "improvement 3"],
-  "overallScore": 85
+  "overallScore": 85,
+  "deliveryScore": 80,
+  "contentScore": 90
 }
 
+${audioFeatures ? `COMPREHENSIVE VOICE ANALYSIS:
+
+Vocal Delivery Metrics:
+- Speaking pace: ${audioFeatures.rhythm.speaking_rate.toFixed(1)} words per minute
+- Confidence level: ${audioFeatures.emotional_markers.confidence_level.toFixed(1)}%
+- Stress level: ${audioFeatures.emotional_markers.stress_level.toFixed(1)}%
+- Energy level: ${audioFeatures.emotional_markers.energy_level.toFixed(1)}%
+- Voice clarity: ${audioFeatures.coaching_metrics.clarity_score.toFixed(1)}%
+- Professional tone: ${audioFeatures.coaching_metrics.professional_tone.toFixed(1)}%
+
+Speech Patterns:
+- Pitch variation: ${audioFeatures.pitch.range.toFixed(1)}Hz range
+- Monotone tendency: ${audioFeatures.pitch.monotoneScore.toFixed(1)}%
+- Volume consistency: ${audioFeatures.volume.consistency.toFixed(1)}%
+- Voice breaks detected: ${audioFeatures.voice_quality.voice_breaks}
+- Pause frequency: ${audioFeatures.timing.pause_count} pauses
+
+Vocal Quality:
+- Articulation score: ${audioFeatures.coaching_metrics.articulation_score.toFixed(1)}%
+- Flow score: ${audioFeatures.coaching_metrics.flow_score.toFixed(1)}%
+- Emphasis variation: ${audioFeatures.coaching_metrics.emphasis_variation.toFixed(1)}%
+- Speech-to-pause ratio: ${audioFeatures.timing.speech_to_pause_ratio.toFixed(1)}
+
+` : voiceMetrics ? `Basic Voice Metrics:
+- Speaking pace: ${voiceMetrics.wordsPerMinute} words per minute
+- Filler words used: ${voiceMetrics.fillerWords}
+- Confidence level: ${voiceMetrics.confidenceLevel}%
+- Clarity score: ${voiceMetrics.clarityScore}%
+- Duration: ${Math.round(voiceMetrics.duration / 60)} minutes ${voiceMetrics.duration % 60} seconds
+
+` : ''}${vocalInsights ? `PROFESSIONAL COACHING INSIGHTS:
+
+Vocal Strengths Identified:
+${vocalInsights.strengths.map(s => `- ${s}`).join('\n')}
+
+Areas for Vocal Improvement:
+${vocalInsights.improvement_areas.map(a => `- ${a}`).join('\n')}
+
+Professional Coaching Recommendations:
+${vocalInsights.specific_recommendations.map(r => `- ${r}`).join('\n')}
+
+Vocal Coaching Tips:
+${vocalInsights.coaching_tips.map(t => `- ${t}`).join('\n')}
+
+Professional Delivery Score: ${vocalInsights.professional_score}/100
+
+` : ''}CONTENT ANALYSIS:
 Pitch to analyze:
-${pitchText}`
+${pitchText}
+
+Please provide feedback that combines both CONTENT analysis (business model, market opportunity, team, etc.) and DELIVERY analysis (vocal coaching, presentation skills, etc.). Give separate scores for content (business merit) and delivery (presentation effectiveness).`
       }
     ];
 
@@ -188,6 +251,184 @@ Respond as the Host, providing facilitation guidance, process suggestions, or be
     });
 
     return response.content;
+  }
+
+  private generateTimelineAnalysis(timestampedMetrics: any[]): string {
+    if (!timestampedMetrics.length) return '';
+
+    // Sample metrics every 5 seconds to avoid overwhelming the prompt
+    const sampledMetrics = timestampedMetrics.filter((_, index) =>
+      index === 0 || index === timestampedMetrics.length - 1 || index % 10 === 0
+    );
+
+    return sampledMetrics.map(metric => {
+      const seconds = Math.round(metric.timeInSeconds);
+      const issues = [];
+
+      if (metric.currentPace > 180) issues.push('speaking too fast');
+      if (metric.currentPace < 120) issues.push('speaking too slow');
+      if (metric.volumeLevel < 30) issues.push('volume too low');
+      if (metric.confidenceLevel < 60) issues.push('low confidence');
+      if (metric.stressLevel > 70) issues.push('high stress');
+      if (metric.monotoneScore > 70) issues.push('monotone delivery');
+      if (metric.recentFillerWords > 2) issues.push(`${metric.recentFillerWords} filler words`);
+
+      const status = issues.length === 0 ? 'good performance' : issues.join(', ');
+
+      return `${seconds}s: ${status} (pace: ${Math.round(metric.currentPace)}wpm, confidence: ${Math.round(metric.confidenceLevel)}%, stress: ${Math.round(metric.stressLevel)}%)`;
+    }).join('\n');
+  }
+
+  async generateComprehensivePitchCoaching(
+    advisor: CelebrityAdvisor,
+    pitchText: string,
+    audioFeatures: AudioFeatures,
+    vocalInsights: VocalDeliveryInsights,
+    timestampedMetrics: any[] = []
+  ): Promise<{
+    overall_feedback: string;
+    content_analysis: {
+      score: number;
+      strengths: string[];
+      improvements: string[];
+      specific_recommendations: string[];
+    };
+    delivery_analysis: {
+      score: number;
+      vocal_strengths: string[];
+      vocal_improvements: string[];
+      coaching_recommendations: string[];
+      technical_metrics: string[];
+    };
+    combined_score: number;
+    action_plan: string[];
+    timeline_analysis?: {
+      problematic_moments: Array<{
+        timestamp: string;
+        issue: string;
+        recommendation: string;
+      }>;
+      improvement_areas: string[];
+    };
+  }> {
+    const systemPrompt = `You are ${advisor.name}, ${advisor.title} at ${advisor.company}.
+
+You are providing comprehensive pitch coaching that combines business analysis with professional presentation skills. You have access to detailed voice analysis data and should provide coaching that addresses both:
+
+1. BUSINESS CONTENT: Market opportunity, business model, team, financials, competitive positioning
+2. PRESENTATION DELIVERY: Voice coaching, speaking techniques, vocal presence, audience engagement
+
+Your expertise includes: ${advisor.expertise.join(', ')}
+Your communication style: ${advisor.communication_style}
+
+Provide detailed, actionable coaching feedback as ${advisor.name} would, focusing on both what they're saying (content) and how they're saying it (delivery).`;
+
+    const messages: AIMessage[] = [
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      {
+        role: 'user',
+        content: `Please provide comprehensive pitch coaching analysis in the following JSON format:
+
+{
+  "overall_feedback": "comprehensive paragraph combining content and delivery insights",
+  "content_analysis": {
+    "score": 85,
+    "strengths": ["business strength 1", "business strength 2"],
+    "improvements": ["business improvement 1", "business improvement 2"],
+    "specific_recommendations": ["specific business action 1", "specific business action 2"]
+  },
+  "delivery_analysis": {
+    "score": 80,
+    "vocal_strengths": ["delivery strength 1", "delivery strength 2"],
+    "vocal_improvements": ["delivery improvement 1", "delivery improvement 2"],
+    "coaching_recommendations": ["vocal coaching tip 1", "vocal coaching tip 2"],
+    "technical_metrics": ["technical observation 1", "technical observation 2"]
+  },
+  "combined_score": 82,
+  "action_plan": ["immediate action 1", "immediate action 2", "practice recommendation 1"],
+  "timeline_analysis": {
+    "problematic_moments": [
+      {"timestamp": "0:15", "issue": "speaking too fast", "recommendation": "slow down and breathe"},
+      {"timestamp": "1:30", "issue": "low confidence", "recommendation": "project more authority"}
+    ],
+    "improvement_areas": ["pacing consistency", "vocal confidence", "energy management"]
+  }
+}
+
+PITCH CONTENT TO ANALYZE:
+${pitchText}
+
+COMPREHENSIVE VOICE & DELIVERY ANALYSIS:
+
+Professional Delivery Score: ${vocalInsights.professional_score}/100
+
+Vocal Strengths:
+${vocalInsights.strengths.map(s => `- ${s}`).join('\n')}
+
+Vocal Improvement Areas:
+${vocalInsights.improvement_areas.map(a => `- ${a}`).join('\n')}
+
+Detailed Voice Metrics:
+- Speaking Rate: ${audioFeatures.rhythm.speaking_rate.toFixed(1)} WPM (ideal: 140-160)
+- Confidence Level: ${audioFeatures.emotional_markers.confidence_level.toFixed(1)}%
+- Stress Level: ${audioFeatures.emotional_markers.stress_level.toFixed(1)}%
+- Energy Level: ${audioFeatures.emotional_markers.energy_level.toFixed(1)}%
+- Clarity Score: ${audioFeatures.coaching_metrics.clarity_score.toFixed(1)}%
+- Professional Tone: ${audioFeatures.coaching_metrics.professional_tone.toFixed(1)}%
+- Monotone Score: ${audioFeatures.pitch.monotoneScore.toFixed(1)}% (lower is better)
+- Volume Consistency: ${audioFeatures.volume.consistency.toFixed(1)}%
+- Voice Breaks: ${audioFeatures.voice_quality.voice_breaks}
+- Pause Count: ${audioFeatures.timing.pause_count}
+- Speech-to-Pause Ratio: ${audioFeatures.timing.speech_to_pause_ratio.toFixed(1)}
+
+Professional Coaching Recommendations:
+${vocalInsights.specific_recommendations.map(r => `- ${r}`).join('\n')}
+
+Vocal Coaching Tips:
+${vocalInsights.coaching_tips.map(t => `- ${t}`).join('\n')}
+
+${timestampedMetrics.length > 0 ? `
+Real-Time Performance Timeline:
+${this.generateTimelineAnalysis(timestampedMetrics)}
+
+This timeline data shows exactly where they struggled during the pitch. Use this to provide specific, timestamp-based recommendations.` : ''}
+
+Provide coaching that addresses both the business merit of their pitch AND their presentation delivery skills. Be specific and actionable in your recommendations. If timeline data is available, include specific timestamps where improvements are needed.`
+      }
+    ];
+
+    console.log('AdvisorAI: Generating comprehensive pitch coaching');
+    const response = await this.client.generateResponse(messages, {
+      temperature: 0.7,
+      maxTokens: 2000
+    });
+
+    try {
+      return JSON.parse(response.content);
+    } catch (error) {
+      // Fallback structured response
+      return {
+        overall_feedback: response.content,
+        content_analysis: {
+          score: 80,
+          strengths: ["Clear value proposition"],
+          improvements: ["More specific market metrics"],
+          specific_recommendations: ["Include customer acquisition cost data"]
+        },
+        delivery_analysis: {
+          score: vocalInsights.professional_score,
+          vocal_strengths: vocalInsights.strengths,
+          vocal_improvements: vocalInsights.improvement_areas,
+          coaching_recommendations: vocalInsights.specific_recommendations,
+          technical_metrics: [`Speaking rate: ${audioFeatures.rhythm.speaking_rate.toFixed(1)} WPM`]
+        },
+        combined_score: Math.round((80 + vocalInsights.professional_score) / 2),
+        action_plan: ["Practice pitch timing", "Work on vocal variety", "Refine business metrics"]
+      };
+    }
   }
 
   async generateDueDiligenceAnalysis(

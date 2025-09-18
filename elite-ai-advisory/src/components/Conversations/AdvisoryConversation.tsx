@@ -126,6 +126,7 @@ export function AdvisoryConversation({ onBack, initialMode = 'general', conversa
   }, [messages]);
 
   useEffect(() => {
+    console.log('AdvisoryConversation mounted with conversationId:', conversationId);
     // Load existing conversation if conversationId provided
     if (conversationId) {
       loadConversation(conversationId);
@@ -133,15 +134,24 @@ export function AdvisoryConversation({ onBack, initialMode = 'general', conversa
   }, [conversationId]);
 
   const loadConversation = (id: string) => {
-    // TODO: Load conversation from storage/API
+    console.log('Loading conversation:', id);
     const saved = localStorage.getItem(`conversation-${id}`);
+    console.log('Saved conversation data:', saved);
+
     if (saved) {
-      const data = JSON.parse(saved);
-      setMessages(data.messages || []);
-      setSelectedAdvisors(data.advisors || []);
-      setSelectedMode(data.mode || 'general');
-      setUploadedFiles(data.files || []);
-      setSelectedDocuments(data.selectedDocuments || []);
+      try {
+        const data = JSON.parse(saved);
+        console.log('Parsed conversation data:', data);
+        setMessages(data.messages || []);
+        setSelectedAdvisors(data.advisors || []);
+        setSelectedMode(data.mode || 'general');
+        setUploadedFiles(data.files || []);
+        setSelectedDocuments(data.selectedDocuments || []);
+      } catch (error) {
+        console.error('Error parsing conversation data:', error);
+      }
+    } else {
+      console.warn('No conversation found with id:', id);
     }
   };
 
@@ -1227,7 +1237,7 @@ ${messages.map(m => `${m.type === 'user' ? 'You' : 'Advisor'}: ${m.content}`).jo
                 )}
                 <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                 <div className="text-xs text-gray-400 mt-2">
-                  {message.timestamp.toLocaleTimeString()}
+                  {new Date(message.timestamp).toLocaleTimeString()}
                 </div>
               </div>
             </div>

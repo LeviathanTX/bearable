@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdvisorProvider } from './contexts/AdvisorContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { HelpProvider } from './contexts/HelpContext';
 import { AuthModal } from './components/Auth/AuthModal';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { PitchPracticeMode } from './components/Modes/PitchPracticeMode';
@@ -218,47 +219,49 @@ function AuthenticatedApp() {
   }
 
   return (
-    <SettingsProvider>
-      <SubscriptionProvider>
-        <AdvisorProvider>
-          {selectedMode ? (
-            (() => {
-              const handleBackToDashboard = () => setSelectedMode(null);
-              
-              switch (selectedMode) {
-                case 'pitch_practice':
-                  return <PitchPracticeMode onBack={handleBackToDashboard} />;
-                case 'advisory_conversation':
-                  return <ConversationManager onBack={handleBackToDashboard} />;
-                case 'advisor_management':
-                  return <AdvisorManagement onBack={handleBackToDashboard} />;
-                default:
-                  return (
-                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                      <div className="max-w-4xl mx-auto px-6 text-center">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                          {selectedMode ? (selectedMode as string).replace('_', ' ').toUpperCase() : ''} Mode
-                        </h1>
-                        <p className="text-xl text-gray-600 mb-8">
-                          This mode is under development. Full implementation coming soon!
-                        </p>
-                        <button
-                          onClick={() => setSelectedMode(null)}
-                          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                        >
-                          Back to Dashboard
-                        </button>
+    <HelpProvider>
+      <SettingsProvider>
+        <SubscriptionProvider>
+          <AdvisorProvider>
+            {selectedMode ? (
+              (() => {
+                const handleBackToDashboard = () => setSelectedMode(null);
+
+                switch (selectedMode) {
+                  case 'pitch_practice':
+                    return <PitchPracticeMode onBack={handleBackToDashboard} />;
+                  case 'advisory_conversation':
+                    return <ConversationManager onBack={handleBackToDashboard} />;
+                  case 'advisor_management':
+                    return <AdvisorManagement onBack={handleBackToDashboard} />;
+                  default:
+                    return (
+                      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                        <div className="max-w-4xl mx-auto px-6 text-center">
+                          <h1 className="text-4xl font-bold text-gray-900 mb-6">
+                            {selectedMode ? (selectedMode as string).replace('_', ' ').toUpperCase() : ''} Mode
+                          </h1>
+                          <p className="text-xl text-gray-600 mb-8">
+                            This mode is under development. Full implementation coming soon!
+                          </p>
+                          <button
+                            onClick={() => setSelectedMode(null)}
+                            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                          >
+                            Back to Dashboard
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-              }
-            })()
-          ) : (
-            <Dashboard onModeSelect={setSelectedMode} />
-          )}
-        </AdvisorProvider>
-      </SubscriptionProvider>
-    </SettingsProvider>
+                    );
+                }
+              })()
+            ) : (
+              <Dashboard onModeSelect={setSelectedMode} />
+            )}
+          </AdvisorProvider>
+        </SubscriptionProvider>
+      </SettingsProvider>
+    </HelpProvider>
   );
 }
 
@@ -269,7 +272,7 @@ function AppContent() {
   console.log('AppContent render:', { user, showAuthModal });
 
   // DEVELOPMENT MODE: Bypass authentication
-  const isDevelopmentMode = true; // Set to false to re-enable authentication
+  const isDevelopmentMode = false; // Set to false to re-enable authentication
 
   if (user || isDevelopmentMode) {
     return <AuthenticatedApp />;
