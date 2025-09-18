@@ -76,7 +76,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </h2>
           <p className="text-gray-600">
             {mode === 'signin' 
-              ? 'Welcome back to Elite AI Advisory' 
+              ? 'Welcome back to Bearable Advisors' 
               : 'Join thousands of entrepreneurs using AI advisory'
             }
           </p>

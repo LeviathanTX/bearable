@@ -32,7 +32,7 @@ function LandingPage({ onGetStarted }: { onGetStarted: () => void }) {
         {/* Hero Section */}
         <div className="mb-12">
           <h1 className="text-6xl font-bold text-gray-900 mb-6">
-            Elite AI Advisory Platform
+            Bearable Advisors
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Transform your strategic decision-making with a virtual board of world-class business advisors powered by cutting-edge AI technology.
@@ -158,7 +158,7 @@ function LandingPage({ onGetStarted }: { onGetStarted: () => void }) {
         <div className="mt-12 pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-gray-500 text-sm">
-              Elite AI Advisory Platform - Where strategy meets innovation ✨
+              Bearable Advisors - Where strategy meets innovation ✨
             </p>
             <div className="flex space-x-6 text-sm">
               <button 
