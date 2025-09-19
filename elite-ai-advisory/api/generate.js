@@ -5,6 +5,8 @@ export default async function handler(req, res) {
   // Enable CORS with specific origin for security
   const allowedOrigins = [
     'https://elite-ai-advisory-clean.vercel.app',
+    'https://bearable-ai-advisors.vercel.app',
+    'https://elite-ai-advisory.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001'
   ];
