@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables - these will be set in production
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://demo.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'demo-key';
+const supabaseUrl = (process.env.REACT_APP_SUPABASE_URL || 'https://demo.supabase.co').trim();
+const supabaseAnonKey = (process.env.REACT_APP_SUPABASE_ANON_KEY || 'demo-key').trim();
 
 // Demo mode flag
 const isDemoMode = !process.env.REACT_APP_SUPABASE_URL;
