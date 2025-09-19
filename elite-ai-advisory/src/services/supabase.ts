@@ -180,7 +180,8 @@ export const signUp = async (email: string, password: string, fullName?: string)
 
   console.log('Using real Supabase signup');
   try {
-    const { data, error } = await supabase.auth.signUp({
+    // Add a timeout to prevent hanging
+    const signupPromise = supabase.auth.signUp({
       email,
       password,
       options: {
@@ -189,11 +190,17 @@ export const signUp = async (email: string, password: string, fullName?: string)
         },
       },
     });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Signup timeout after 10 seconds')), 10000)
+    );
+
+    const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
     console.log('Supabase signup response:', { data: !!data, error: !!error, errorMessage: error?.message });
     return { data, error };
   } catch (err) {
     console.error('Supabase signup exception:', err);
-    return { data: null, error: { message: 'Signup failed' } };
+    return { data: null, error: { message: err.message || 'Signup failed' } };
   }
 };
 
