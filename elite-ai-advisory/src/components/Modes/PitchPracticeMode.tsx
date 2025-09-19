@@ -4,6 +4,7 @@ import { cn } from '../../utils';
 import { createAdvisorAI } from '../../services/advisorAI';
 import { createAudioAnalysisEngine, AudioFeatures, VocalDeliveryInsights } from '../../services/AudioAnalysisEngine';
 import RealTimeAudioFeedback from '../Audio/RealTimeAudioFeedback';
+import { LiveCoachingChart } from '../Charts/LiveCoachingChart';
 
 interface PitchPracticeModeProps {
   onBack: () => void;
@@ -36,6 +37,16 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
   const [audioAnalysisEngine, setAudioAnalysisEngine] = useState<any>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
+
+  // Live coaching metrics
+  const [liveMetrics, setLiveMetrics] = useState<Array<{
+    timestamp: number;
+    confidence: number;
+    pace: number;
+    volume: number;
+    stress: number;
+    energy: number;
+  }>>([]);
   const [realTimeMetrics, setRealTimeMetrics] = useState<any>(null);
   const [isProcessingAudio, setIsProcessingAudio] = useState(false);
   const [timestampedMetrics, setTimestampedMetrics] = useState<any[]>([]);
@@ -78,6 +89,18 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
       };
 
       setTimestampedMetrics(prev => [...prev, timestampedMetric]);
+
+      // Add to live coaching metrics for chart display
+      const chartMetric = {
+        timestamp: timestamp / 1000, // Convert to seconds
+        confidence: metrics.confidenceLevel || 50,
+        pace: Math.min(100, Math.max(0, (metrics.currentPace - 120) / 2 + 50)), // Convert WPM to 0-100 scale
+        volume: Math.min(100, metrics.volumeLevel * 100),
+        stress: 100 - (metrics.stressLevel || 50), // Invert stress (lower stress = higher score)
+        energy: metrics.energyLevel || 50
+      };
+
+      setLiveMetrics(prev => [...prev.slice(-200), chartMetric]); // Keep last 200 points for smooth chart
     }
   };
 
@@ -219,6 +242,7 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
       setTimeRemaining(pitchDuration * 60);
       setSpeechTranscript(''); // Reset transcript
       setAudioFeatures(null);
+      setLiveMetrics([]); // Reset live coaching metrics
       setVocalInsights(null);
 
       // Initialize timestamp tracking for real-time metrics
@@ -756,12 +780,12 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
               {Object.entries(analysis.metrics).map(([key, value]) => (
                 <div key={key} className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 mb-1">{value as number}%</div>
+                  <div className="text-2xl font-bold text-purple-600 mb-1">{Math.round(value as number)}%</div>
                   <div className="text-sm text-gray-600 capitalize">{key}</div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                     <div 
                       className="bg-purple-500 h-2 rounded-full" 
-                      style={{ width: `${value as number}%` }}
+                      style={{ width: `${Math.min(100, Math.max(0, Math.round(value as number)))}%` }}
                     ></div>
                   </div>
                 </div>
@@ -1325,6 +1349,7 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
                             setRecordingTime(0);
                             setAudioFeatures(null);
                             setVocalInsights(null);
+                            setLiveMetrics([]);
                             setIsProcessingAudio(false);
                           }}
                           className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors"
@@ -1379,6 +1404,17 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
                         Listening and transcribing...
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Live Coaching Chart */}
+                {(isRecording || liveMetrics.length > 0) && (
+                  <div className="mt-6">
+                    <LiveCoachingChart
+                      data={liveMetrics}
+                      isRecording={isRecording}
+                      duration={recordingTime}
+                    />
                   </div>
                 )}
               </div>
