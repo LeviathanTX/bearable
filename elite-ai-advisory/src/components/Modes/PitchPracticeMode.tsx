@@ -182,13 +182,15 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
           audioAnalysisEngine.stopAnalysis();
         }
 
-        // Generate comprehensive audio analysis
-        if (audioAnalysisEngine && speechTranscript) {
+        // Generate comprehensive audio analysis - try even if speechTranscript is empty
+        if (audioAnalysisEngine) {
           setIsProcessingAudio(true);
           console.log('Starting comprehensive audio analysis...');
           try {
+            // Use fallback transcript if no speech recognition
+            const transcriptText = speechTranscript || 'Voice pitch recorded without transcript';
             const features = await audioAnalysisEngine.generateComprehensiveAnalysis(
-              speechTranscript,
+              transcriptText,
               recordingTime
             );
             const insights = audioAnalysisEngine.generateVocalDeliveryInsights(features);
@@ -204,7 +206,7 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
             setIsProcessingAudio(false);
           }
         } else {
-          console.warn('Cannot generate comprehensive analysis - missing audioAnalysisEngine or speechTranscript');
+          console.warn('Cannot generate comprehensive analysis - missing audioAnalysisEngine');
         }
       };
 
@@ -619,7 +621,10 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
       // Add some content strengths if the speech shows good structure
       if (speechData.wordCount > 100) actualStrengths.push('Comprehensive pitch content with good detail');
 
-      return actualStrengths.length > 0 ? actualStrengths : potentialStrengths.slice(0, 2);
+      const validStrengths = actualStrengths.filter(item =>
+        typeof item === 'string' && item.trim() && !item.match(/^[\[\],\{\}]+$/)
+      );
+      return validStrengths.length > 0 ? validStrengths : potentialStrengths.slice(0, 2);
     }
 
     return potentialStrengths;
@@ -645,7 +650,9 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
       if (speechData.confidenceLevel < 60) voiceImprovements.push('Project more confidence through stronger voice projection and clearer delivery');
       if (speechData.pauseAnalysis.totalPauses < 5) voiceImprovements.push('Use strategic pauses (1-2 seconds) to emphasize key points and allow processing time');
 
-      return [...baseImprovements.slice(0, 3), ...voiceImprovements];
+      return [...baseImprovements.slice(0, 3), ...voiceImprovements].filter(item =>
+        typeof item === 'string' && item.trim() && !item.match(/^[\[\],\{\}]+$/)
+      );
     }
 
     return baseImprovements;
