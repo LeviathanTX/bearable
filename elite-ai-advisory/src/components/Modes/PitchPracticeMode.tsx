@@ -106,7 +106,10 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setIsTranscribing(false);
+        // Don't stop transcribing for "no-speech" errors - just continue listening
+        if (event.error !== 'no-speech') {
+          setIsTranscribing(false);
+        }
       };
 
       recognition.onend = () => {
@@ -381,10 +384,12 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
     setIsAnalyzing(true);
 
     try {
-      // Determine pitch content
-      const pitchContent = pitchMode === 'voice' ? speechTranscript : pitchText;
+      // Determine pitch content - be more lenient for voice mode
+      const pitchContent = pitchMode === 'voice' ?
+        (speechTranscript.trim() || 'Voice pitch recorded without clear transcript') :
+        pitchText;
 
-      if (!pitchContent.trim()) {
+      if (pitchMode === 'text' && !pitchContent.trim()) {
         throw new Error('No pitch content to analyze');
       }
 
@@ -415,10 +420,10 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
           vocalInsights,
           timestampedMetrics
         );
-      } else if (pitchMode === 'voice' && speechTranscript && recordedAudio) {
+      } else if (pitchMode === 'voice' && recordedAudio) {
         // Fallback: Generate basic speech analysis if comprehensive analysis isn't available
         console.log('Falling back to basic speech analysis');
-        await analyzeSpeech(recordedAudio, speechTranscript);
+        await analyzeSpeech(recordedAudio, pitchContent);
 
         const voiceMetrics = speechAnalysis ? {
           wordsPerMinute: speechAnalysis.wordsPerMinute,
