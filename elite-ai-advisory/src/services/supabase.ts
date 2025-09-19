@@ -145,15 +145,22 @@ export const signIn = async (email: string, password: string) => {
 
   console.log('Using real Supabase authentication');
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // Add a timeout to prevent hanging
+    const signinPromise = supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Signin timeout after 10 seconds')), 10000)
+    );
+
+    const { data, error } = await Promise.race([signinPromise, timeoutPromise]) as any;
     console.log('Supabase auth response:', { data: !!data, error: !!error, errorMessage: error?.message });
     return { data, error };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Supabase auth exception:', err);
-    return { data: null, error: { message: 'Authentication failed' } };
+    return { data: null, error: { message: err.message || 'Authentication failed' } };
   }
 };
 
