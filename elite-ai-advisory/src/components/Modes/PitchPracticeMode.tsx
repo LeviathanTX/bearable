@@ -768,6 +768,17 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
               )}
             </div>
 
+            {/* Live Coaching Chart - Voice Mode Only */}
+            {pitchMode === 'voice' && liveMetrics.length > 0 && (
+              <div className="mb-8">
+                <LiveCoachingChart
+                  data={liveMetrics}
+                  isRecording={false}
+                  duration={recordingTime}
+                />
+              </div>
+            )}
+
             {/* Overall Score */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full text-white text-2xl font-bold mb-4">

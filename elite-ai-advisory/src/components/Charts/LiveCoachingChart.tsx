@@ -61,7 +61,7 @@ export const LiveCoachingChart: React.FC<LiveCoachingChartProps> = ({
     <div className="bg-white rounded-lg border p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">
-          🎤 Live Coaching Metrics
+          📈 Voice Performance Timeline
         </h3>
         {isRecording && (
           <div className="flex items-center text-red-600">
