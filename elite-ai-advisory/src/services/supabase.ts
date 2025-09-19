@@ -123,58 +123,78 @@ export interface Database {
 
 // Helper functions for authentication
 export const signIn = async (email: string, password: string) => {
+  console.log('signIn called:', { email, isDemoMode, supabaseUrl });
+
   if (isDemoMode) {
     // Demo mode - simulate successful login
+    console.log('Using demo mode authentication');
     const demoUser = {
       id: 'demo-user-123',
       email,
       user_metadata: { full_name: 'Demo User' },
       created_at: new Date().toISOString()
     };
-    return { 
-      data: { 
+    return {
+      data: {
         user: demoUser,
         session: { user: demoUser, access_token: 'demo-token' }
-      }, 
-      error: null 
+      },
+      error: null
     };
   }
-  
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
+
+  console.log('Using real Supabase authentication');
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    console.log('Supabase auth response:', { data: !!data, error: !!error, errorMessage: error?.message });
+    return { data, error };
+  } catch (err) {
+    console.error('Supabase auth exception:', err);
+    return { data: null, error: { message: 'Authentication failed' } };
+  }
 };
 
 export const signUp = async (email: string, password: string, fullName?: string) => {
+  console.log('signUp called:', { email, fullName, isDemoMode });
+
   if (isDemoMode) {
     // Demo mode - simulate successful signup
+    console.log('Using demo mode signup');
     const demoUser = {
       id: 'demo-user-123',
       email,
       user_metadata: { full_name: fullName || 'Demo User' },
       created_at: new Date().toISOString()
     };
-    return { 
-      data: { 
+    return {
+      data: {
         user: demoUser,
         session: { user: demoUser, access_token: 'demo-token' }
-      }, 
-      error: null 
+      },
+      error: null
     };
   }
-  
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
+
+  console.log('Using real Supabase signup');
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
       },
-    },
-  });
-  return { data, error };
+    });
+    console.log('Supabase signup response:', { data: !!data, error: !!error, errorMessage: error?.message });
+    return { data, error };
+  } catch (err) {
+    console.error('Supabase signup exception:', err);
+    return { data: null, error: { message: 'Signup failed' } };
+  }
 };
 
 export const signOut = async () => {
