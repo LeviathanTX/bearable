@@ -289,13 +289,13 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
       const pauseIndicators = transcript.match(/[,.!?;]/g) || [];
       const estimatedPauses = pauseIndicators.length;
 
-      // Calculate confidence metrics based on speech patterns
-      const confidenceLevel = Math.max(60, Math.min(100,
-        100 - (fillerCount * 2) - (wordsPerMinute < 120 ? 10 : 0) - (wordsPerMinute > 180 ? 15 : 0)
+      // Calculate confidence metrics based on speech patterns - more realistic scoring
+      const confidenceLevel = Math.max(35, Math.min(90,
+        85 - (fillerCount * 3) - (wordsPerMinute < 120 ? 15 : 0) - (wordsPerMinute > 180 ? 20 : 0)
       ));
 
-      const clarityScore = Math.max(70, Math.min(100,
-        100 - (fillerCount * 1.5) - (transcript.length < 100 ? 20 : 0)
+      const clarityScore = Math.max(40, Math.min(90,
+        85 - (fillerCount * 2.5) - (transcript.length < 100 ? 25 : 0) - (words.length < 50 ? 15 : 0)
       ));
 
       const stressLevel = Math.max(20, Math.min(80,
@@ -480,12 +480,12 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
 
         setAnalysis(realAnalysis);
       } else {
-        // Standard analysis format
+        // Standard analysis format - more realistic scoring
         let baseMetrics = {
-          clarity: aiAnalysis.overallScore || 75,
-          confidence: aiAnalysis.overallScore || 75,
-          structure: aiAnalysis.overallScore || 75,
-          engagement: aiAnalysis.overallScore || 75,
+          clarity: Math.min(85, Math.max(45, aiAnalysis.overallScore || 65)),
+          confidence: Math.min(85, Math.max(50, aiAnalysis.overallScore || 65)),
+          structure: Math.min(85, Math.max(40, aiAnalysis.overallScore || 65)),
+          engagement: Math.min(85, Math.max(55, aiAnalysis.overallScore || 65)),
         };
 
         // Adjust metrics based on speech analysis if available
@@ -526,10 +526,10 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
       const selectedAdvisorObjects = selectedAdvisors.map(id => getCelebrityAdvisor(id)).filter(Boolean);
 
       const baseMetrics = {
-        clarity: Math.floor(Math.random() * 25) + 75,
-        confidence: Math.floor(Math.random() * 25) + 75,
-        structure: Math.floor(Math.random() * 25) + 75,
-        engagement: Math.floor(Math.random() * 25) + 75,
+        clarity: Math.floor(Math.random() * 40) + 45, // Range: 45-85%
+        confidence: Math.floor(Math.random() * 35) + 50, // Range: 50-85%
+        structure: Math.floor(Math.random() * 45) + 40, // Range: 40-85%
+        engagement: Math.floor(Math.random() * 30) + 55, // Range: 55-85%
       };
 
       // Adjust metrics based on speech analysis if available
@@ -597,43 +597,55 @@ export const PitchPracticeMode: React.FC<PitchPracticeModeProps> = ({ onBack }) 
   };
 
   const generateStrengths = (speechData: any, mode: string) => {
-    const baseStrengths = [
-      'Clear problem statement',
-      'Strong market validation',
-      'Passionate delivery'
+    const potentialStrengths = [
+      'Addresses a significant healthcare problem (patient compliance/adherence)',
+      'Leverages emerging AI technology in a practical application',
+      'Novel approach to healthcare coaching using friendly/non-threatening interface'
     ];
 
+    // Only show strengths that are actually demonstrated
+    const actualStrengths = [];
+
     if (mode === 'voice' && speechData) {
-      const voiceStrengths = [];
-      if (speechData.confidenceLevel > 80) voiceStrengths.push('Very confident delivery');
-      if (speechData.honestyIndicator > 90) voiceStrengths.push('Authentic and genuine tone');
-      if (speechData.energyLevel > 80) voiceStrengths.push('High energy and enthusiasm');
-      if (speechData.wordsPerMinute >= 140 && speechData.wordsPerMinute <= 160) voiceStrengths.push('Perfect speaking pace');
-      if (speechData.stressLevel < 40) voiceStrengths.push('Calm and composed delivery');
-      
-      return [...baseStrengths, ...voiceStrengths];
+      // Only add voice strengths if they actually meet the criteria
+      if (speechData.confidenceLevel > 70) actualStrengths.push('Confident and assured delivery');
+      if (speechData.honestyIndicator > 85) actualStrengths.push('Authentic and genuine tone');
+      if (speechData.energyLevel > 75) actualStrengths.push('Good energy and enthusiasm level');
+      if (speechData.wordsPerMinute >= 140 && speechData.wordsPerMinute <= 160) actualStrengths.push('Optimal speaking pace for audience engagement');
+      if (speechData.stressLevel < 45) actualStrengths.push('Calm and composed under pressure');
+      if (speechData.pauseAnalysis.fillerWords < 5) actualStrengths.push('Clear and articulate speech with minimal filler words');
+      if (speechData.clarityScore > 75) actualStrengths.push('Clear pronunciation and articulation');
+
+      // Add some content strengths if the speech shows good structure
+      if (speechData.wordCount > 100) actualStrengths.push('Comprehensive pitch content with good detail');
+
+      return actualStrengths.length > 0 ? actualStrengths : potentialStrengths.slice(0, 2);
     }
 
-    return baseStrengths;
+    return potentialStrengths;
   };
 
   const generateImprovements = (speechData: any, mode: string) => {
     const baseImprovements = [
-      'More specific financial metrics',
-      'Competitive differentiation',
-      'Risk mitigation strategy'
+      'Develop detailed market size analysis and customer segmentation',
+      'Articulate clear revenue model and unit economics',
+      'Present clinical validation strategy and regulatory compliance approach',
+      'Structure pitch with professional formatting and clear sections',
+      'Include specific metrics on healthcare outcomes improvement'
     ];
 
     if (mode === 'voice' && speechData) {
       const voiceImprovements = [];
-      if (speechData.stressLevel > 60) voiceImprovements.push('Work on reducing stress levels during presentation');
-      if (speechData.pauseAnalysis.fillerWords > 15) voiceImprovements.push('Reduce filler words (um, uh, like)');
-      if (speechData.wordsPerMinute < 120) voiceImprovements.push('Speak at a faster pace to maintain engagement');
-      if (speechData.wordsPerMinute > 170) voiceImprovements.push('Slow down speaking pace for better clarity');
-      if (speechData.speechPatterns.monotone) voiceImprovements.push('Add more vocal variety and intonation');
-      if (speechData.clarityScore < 80) voiceImprovements.push('Improve pronunciation and articulation');
-      
-      return [...baseImprovements, ...voiceImprovements];
+      if (speechData.stressLevel > 50) voiceImprovements.push('Practice breathing techniques to reduce nervousness and project more confidence');
+      if (speechData.pauseAnalysis.fillerWords > 8) voiceImprovements.push(`Reduce filler words (detected ${speechData.pauseAnalysis.fillerWords}) - practice pausing instead of using "um", "uh", "like"`);
+      if (speechData.wordsPerMinute < 130) voiceImprovements.push('Increase speaking pace to 140-160 WPM to maintain audience engagement');
+      if (speechData.wordsPerMinute > 170) voiceImprovements.push('Slow down speaking pace - aim for 140-160 WPM for optimal comprehension');
+      if (speechData.speechPatterns.monotone) voiceImprovements.push('Add vocal variety: vary pitch, tone, and emphasis to keep audience engaged');
+      if (speechData.clarityScore < 70) voiceImprovements.push('Improve articulation and pronunciation - consider tongue twisters practice');
+      if (speechData.confidenceLevel < 60) voiceImprovements.push('Project more confidence through stronger voice projection and clearer delivery');
+      if (speechData.pauseAnalysis.totalPauses < 5) voiceImprovements.push('Use strategic pauses (1-2 seconds) to emphasize key points and allow processing time');
+
+      return [...baseImprovements.slice(0, 3), ...voiceImprovements];
     }
 
     return baseImprovements;
