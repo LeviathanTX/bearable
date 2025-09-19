@@ -198,7 +198,7 @@ export const signUp = async (email: string, password: string, fullName?: string)
     const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
     console.log('Supabase signup response:', { data: !!data, error: !!error, errorMessage: error?.message });
     return { data, error };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Supabase signup exception:', err);
     return { data: null, error: { message: err.message || 'Signup failed' } };
   }
