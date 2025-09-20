@@ -144,22 +144,43 @@ export const signIn = async (email: string, password: string) => {
   }
 
   console.log('Using real Supabase authentication');
+  console.log('Supabase client initialized with URL:', supabaseUrl);
+
   try {
-    // Add a timeout to prevent hanging
+    // Test connectivity first
+    console.log('Testing Supabase connectivity...');
+    const startTime = Date.now();
+
+    // Add a timeout to prevent hanging - increased to 30 seconds
     const signinPromise = supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Signin timeout after 10 seconds')), 10000)
+      setTimeout(() => reject(new Error('Signin timeout after 30 seconds')), 30000)
     );
 
+    console.log('Starting authentication request...');
     const { data, error } = await Promise.race([signinPromise, timeoutPromise]) as any;
-    console.log('Supabase auth response:', { data: !!data, error: !!error, errorMessage: error?.message });
+    const duration = Date.now() - startTime;
+
+    console.log('Supabase auth response:', {
+      data: !!data,
+      error: !!error,
+      errorMessage: error?.message,
+      duration: `${duration}ms`,
+      hasUser: !!data?.user,
+      hasSession: !!data?.session
+    });
+
     return { data, error };
   } catch (err: any) {
-    console.error('Supabase auth exception:', err);
+    console.error('Supabase auth exception:', {
+      message: err.message,
+      stack: err.stack,
+      name: err.name
+    });
     return { data: null, error: { message: err.message || 'Authentication failed' } };
   }
 };
@@ -186,8 +207,13 @@ export const signUp = async (email: string, password: string, fullName?: string)
   }
 
   console.log('Using real Supabase signup');
+  console.log('Supabase client initialized with URL:', supabaseUrl);
+
   try {
-    // Add a timeout to prevent hanging
+    console.log('Testing Supabase connectivity for signup...');
+    const startTime = Date.now();
+
+    // Add a timeout to prevent hanging - increased to 30 seconds
     const signupPromise = supabase.auth.signUp({
       email,
       password,
@@ -199,14 +225,29 @@ export const signUp = async (email: string, password: string, fullName?: string)
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Signup timeout after 10 seconds')), 10000)
+      setTimeout(() => reject(new Error('Signup timeout after 30 seconds')), 30000)
     );
 
+    console.log('Starting signup request...');
     const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
-    console.log('Supabase signup response:', { data: !!data, error: !!error, errorMessage: error?.message });
+    const duration = Date.now() - startTime;
+
+    console.log('Supabase signup response:', {
+      data: !!data,
+      error: !!error,
+      errorMessage: error?.message,
+      duration: `${duration}ms`,
+      hasUser: !!data?.user,
+      hasSession: !!data?.session
+    });
+
     return { data, error };
   } catch (err: any) {
-    console.error('Supabase signup exception:', err);
+    console.error('Supabase signup exception:', {
+      message: err.message,
+      stack: err.stack,
+      name: err.name
+    });
     return { data: null, error: { message: err.message || 'Signup failed' } };
   }
 };

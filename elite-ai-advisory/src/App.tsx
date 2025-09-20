@@ -272,7 +272,7 @@ function AppContent() {
   console.log('AppContent render:', { user, showAuthModal });
 
   // DEVELOPMENT MODE: Bypass authentication
-  const isDevelopmentMode = true; // Temporarily enabled for testing improved scoring
+  const isDevelopmentMode = false; // Disabled to test real authentication
 
   if (user || isDevelopmentMode) {
     return <AuthenticatedApp />;
