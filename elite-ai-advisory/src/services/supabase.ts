@@ -7,7 +7,21 @@ const supabaseAnonKey = (process.env.REACT_APP_SUPABASE_ANON_KEY || 'demo-key').
 // Demo mode flag
 const isDemoMode = !process.env.REACT_APP_SUPABASE_URL;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Debug logging
+console.log('Supabase initialization:', {
+  url: supabaseUrl,
+  hasAnonKey: !!supabaseAnonKey,
+  anonKeyLength: supabaseAnonKey?.length || 0,
+  isDemoMode
+});
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
 
 // Database Tables Schema (for reference)
 export interface Database {
@@ -121,6 +135,31 @@ export interface Database {
   };
 }
 
+// Test connectivity to Supabase
+export const testSupabaseConnectivity = async () => {
+  console.log('Testing basic Supabase connectivity...');
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`
+      }
+    });
+
+    console.log('Supabase connectivity test:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Supabase connectivity test failed:', error);
+    return false;
+  }
+};
+
 // Helper functions for authentication
 export const signIn = async (email: string, password: string) => {
   console.log('signIn called:', { email, isDemoMode, supabaseUrl });
@@ -147,7 +186,12 @@ export const signIn = async (email: string, password: string) => {
   console.log('Supabase client initialized with URL:', supabaseUrl);
 
   try {
-    // Test connectivity first
+    // Test basic connectivity first
+    const isConnected = await testSupabaseConnectivity();
+    if (!isConnected) {
+      throw new Error('Unable to connect to Supabase - check network and configuration');
+    }
+
     console.log('Testing Supabase connectivity...');
     const startTime = Date.now();
 
@@ -210,6 +254,12 @@ export const signUp = async (email: string, password: string, fullName?: string)
   console.log('Supabase client initialized with URL:', supabaseUrl);
 
   try {
+    // Test basic connectivity first
+    const isConnected = await testSupabaseConnectivity();
+    if (!isConnected) {
+      throw new Error('Unable to connect to Supabase - check network and configuration');
+    }
+
     console.log('Testing Supabase connectivity for signup...');
     const startTime = Date.now();
 
@@ -229,7 +279,37 @@ export const signUp = async (email: string, password: string, fullName?: string)
     );
 
     console.log('Starting signup request...');
-    const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
+
+    // Try direct API call as backup if client hangs
+    const directSignupPromise = fetch(`${supabaseUrl}/auth/v1/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        data: { full_name: fullName }
+      })
+    }).then(async response => {
+      const responseData = await response.json();
+      if (!response.ok) {
+        return { data: null, error: responseData };
+      }
+      return { data: responseData, error: null };
+    });
+
+    // Race between client call and direct API call
+    const { data, error } = await Promise.race([
+      signupPromise,
+      directSignupPromise.then(result => {
+        console.log('Direct API signup completed first');
+        return result;
+      }),
+      timeoutPromise
+    ]) as any;
     const duration = Date.now() - startTime;
 
     console.log('Supabase signup response:', {
