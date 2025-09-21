@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, X, Upload, Check, ExternalLink } from 'lucide-react';
+import { FileText, Search, X, Upload, Check, AlertCircle } from 'lucide-react';
 import { DocumentStorage, StoredDocument } from '../../services/DocumentStorage';
 import { DocumentProcessor } from '../../services/DocumentProcessor';
 import { DocumentReference } from '../../services/DocumentContext';
@@ -21,9 +21,12 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
   onClose
 }) => {
   const [documentStorage] = useState(() => DocumentStorage.getInstance());
+  const [documentProcessor] = useState(() => new DocumentProcessor());
   const [availableDocuments, setAvailableDocuments] = useState<StoredDocument[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [uploadErrors, setUploadErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -113,6 +116,75 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
     onDocumentsSelected([]);
   };
 
+  const handleFileUpload = async (files: FileList) => {
+    setIsLoading(true);
+    const fileArray = Array.from(files);
+    const newProgress: {[key: string]: number} = {};
+    const newErrors: {[key: string]: string} = {};
+
+    // Initialize progress tracking
+    fileArray.forEach(file => {
+      newProgress[file.name] = 0;
+    });
+    setUploadProgress(newProgress);
+    setUploadErrors({});
+
+    for (const file of fileArray) {
+      try {
+        // Update progress: Starting validation
+        setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
+
+        // Validate file
+        const validation = documentProcessor.validateFile(file);
+        if (!validation.isValid) {
+          newErrors[file.name] = validation.error || 'Invalid file';
+          setUploadErrors(prev => ({ ...prev, [file.name]: validation.error || 'Invalid file' }));
+          continue;
+        }
+
+        // Update progress: Processing file
+        setUploadProgress(prev => ({ ...prev, [file.name]: 30 }));
+
+        // Process the document
+        const processedDoc = await documentProcessor.processFile(file);
+
+        // Update progress: Storing document
+        setUploadProgress(prev => ({ ...prev, [file.name]: 70 }));
+
+        // Store the document
+        const storedDoc = await documentStorage.storeDocument(
+          file,
+          processedDoc,
+          advisorId,
+          'test-user-1', // TODO: Get actual user ID from auth context
+          {
+            category: 'other',
+            confidentialityLevel: 'internal',
+            tags: []
+          }
+        );
+
+        // Update progress: Complete
+        setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+
+        console.log(`✅ Successfully uploaded: ${file.name}`, storedDoc);
+
+      } catch (error) {
+        console.error(`❌ Error uploading ${file.name}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+        newErrors[file.name] = errorMessage;
+        setUploadErrors(prev => ({ ...prev, [file.name]: errorMessage }));
+      }
+    }
+
+    // Refresh the document list
+    setTimeout(() => {
+      loadDocuments();
+      setUploadProgress({});
+      setIsLoading(false);
+    }, 1000);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -164,21 +236,25 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
                   const input = document.createElement('input');
                   input.type = 'file';
                   input.multiple = true;
-                  input.accept = '.pdf,.doc,.docx,.txt,.md';
+                  input.accept = '.pdf,.doc,.docx,.txt,.md,.xlsx,.pptx,.ppt';
                   input.onchange = (e) => {
                     const files = (e.target as HTMLInputElement).files;
-                    if (files) {
-                      // Handle file upload here - this would integrate with existing upload logic
-                      console.log('Files selected for upload:', Array.from(files).map(f => f.name));
-                      // TODO: Integrate with document upload functionality
+                    if (files && files.length > 0) {
+                      handleFileUpload(files);
                     }
                   };
                   input.click();
                 }}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-green-600 hover:bg-green-50 rounded-lg border border-green-200"
+                disabled={isLoading}
+                className={cn(
+                  "flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg border",
+                  isLoading
+                    ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                    : "text-green-600 hover:bg-green-50 border-green-200"
+                )}
               >
                 <Upload className="w-4 h-4" />
-                <span>Upload</span>
+                <span>{isLoading ? 'Uploading...' : 'Upload'}</span>
               </button>
               <button
                 onClick={selectAllFiltered}
@@ -202,6 +278,34 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
               <p className="text-sm font-medium text-blue-900">
                 {selectedDocuments.length} document{selectedDocuments.length === 1 ? '' : 's'} selected
               </p>
+            </div>
+          )}
+
+          {/* Upload Progress Display */}
+          {Object.keys(uploadProgress).length > 0 && (
+            <div className="mt-4 space-y-2">
+              {Object.entries(uploadProgress).map(([filename, progress]) => (
+                <div key={filename} className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700 truncate">
+                      {filename}
+                    </span>
+                    <span className="text-sm text-gray-500">{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  {uploadErrors[filename] && (
+                    <div className="flex items-center space-x-1 mt-2">
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                      <span className="text-sm text-red-600">{uploadErrors[filename]}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
