@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AICompanion, User } from '../types';
 import { PremiumVoiceService } from '../services/premiumVoiceService';
+import { VoiceCoachingSession } from './VoiceCoachingSession';
 
 interface BearCompanionProps {
   companion: AICompanion;
@@ -9,10 +10,15 @@ interface BearCompanionProps {
   onStartVoiceChat?: () => void;
 }
 
+type VoiceSessionType = 'wellness_check' | 'goal_setting' | 'habit_coaching' | 'stress_management' | 'sleep_coaching';
+
 export const BearCompanion: React.FC<BearCompanionProps> = ({ companion, user, onStartChat, onStartVoiceChat }) => {
   const [isListening, setIsListening] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showVoiceCoaching, setShowVoiceCoaching] = useState(false);
+  const [selectedSessionType, setSelectedSessionType] = useState<VoiceSessionType>('wellness_check');
+  const [showSessionMenu, setShowSessionMenu] = useState(false);
 
   const greetingMessages = [
     `Good morning, ${user.name}! Ready to make today amazing? 🌟`,
@@ -28,6 +34,44 @@ export const BearCompanion: React.FC<BearCompanionProps> = ({ companion, user, o
     "I'm feeling stressed",
     "Show my progress",
     "Daily wellness tip"
+  ];
+
+  const voiceSessionOptions = [
+    {
+      type: 'wellness_check' as VoiceSessionType,
+      title: 'Wellness Check-In',
+      description: 'Quick 10-minute assessment of your overall wellbeing',
+      icon: '🌟',
+      color: 'from-emerald-400 to-cyan-500'
+    },
+    {
+      type: 'goal_setting' as VoiceSessionType,
+      title: 'Goal Setting',
+      description: 'Define and plan your health goals with guided conversation',
+      icon: '🎯',
+      color: 'from-blue-400 to-indigo-500'
+    },
+    {
+      type: 'habit_coaching' as VoiceSessionType,
+      title: 'Habit Coaching',
+      description: 'Build healthy habits with personalized strategies',
+      icon: '🔄',
+      color: 'from-purple-400 to-pink-500'
+    },
+    {
+      type: 'stress_management' as VoiceSessionType,
+      title: 'Stress Management',
+      description: 'Learn techniques to handle stress and find calm',
+      icon: '🧘‍♀️',
+      color: 'from-teal-400 to-green-500'
+    },
+    {
+      type: 'sleep_coaching' as VoiceSessionType,
+      title: 'Sleep Coaching',
+      description: 'Improve your sleep quality with expert guidance',
+      icon: '😴',
+      color: 'from-indigo-400 to-purple-500'
+    }
   ];
 
   useEffect(() => {
@@ -48,6 +92,16 @@ export const BearCompanion: React.FC<BearCompanionProps> = ({ companion, user, o
   }, [user.name]);
 
   const handleVoiceInteraction = () => {
+    setShowSessionMenu(true);
+  };
+
+  const handleSessionSelect = (sessionType: VoiceSessionType) => {
+    setSelectedSessionType(sessionType);
+    setShowSessionMenu(false);
+    setShowVoiceCoaching(true);
+  };
+
+  const handleQuickVoiceChat = () => {
     setIsListening(true);
     // Switch to voice chat mode and start listening immediately
     setTimeout(() => {
@@ -124,7 +178,7 @@ export const BearCompanion: React.FC<BearCompanionProps> = ({ companion, user, o
 
           {/* Interaction Options */}
           <div className="space-y-4">
-            {/* Voice Button */}
+            {/* Voice Coaching Button */}
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleVoiceInteraction}
@@ -136,19 +190,29 @@ export const BearCompanion: React.FC<BearCompanionProps> = ({ companion, user, o
                 }`}
               >
                 <div className="text-xl">
-                  {isListening ? '🎙️' : '🎤'}
+                  {isListening ? '🎙️' : '🎯'}
                 </div>
                 <span>
-                  {isListening ? 'Listening...' : 'Talk to me'}
+                  {isListening ? 'Listening...' : 'Voice Coaching'}
                 </span>
               </button>
 
               <button
-                onClick={onStartChat}
-                className="flex items-center space-x-3 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all duration-200 shadow-md hover:shadow-lg border border-slate-200/50"
+                onClick={handleQuickVoiceChat}
+                disabled={isListening}
+                className="flex items-center space-x-3 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-200 transition-all duration-200 shadow-md hover:shadow-lg border border-emerald-200/50"
+                title="Quick voice chat without structured session"
               >
-                <div className="text-xl">💬</div>
-                <span>Type instead</span>
+                <div className="text-lg">🎤</div>
+                <span className="text-sm">Quick Chat</span>
+              </button>
+
+              <button
+                onClick={onStartChat}
+                className="flex items-center space-x-3 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all duration-200 shadow-md hover:shadow-lg border border-slate-200/50"
+              >
+                <div className="text-lg">💬</div>
+                <span className="text-sm">Type</span>
               </button>
             </div>
 
@@ -210,6 +274,79 @@ export const BearCompanion: React.FC<BearCompanionProps> = ({ companion, user, o
           </div>
         </div>
       </div>
+
+      {/* Voice Session Menu */}
+      {showSessionMenu && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-2xl border border-white/20">
+            <div className="p-6 border-b border-slate-200/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
+                    🎯 Choose Your Voice Coaching Session
+                  </h2>
+                  <p className="text-slate-600 text-sm mt-1">Select a guided conversation to support your wellness journey</p>
+                </div>
+                <button
+                  onClick={() => setShowSessionMenu(false)}
+                  className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+              {voiceSessionOptions.map((session) => (
+                <button
+                  key={session.type}
+                  onClick={() => handleSessionSelect(session.type)}
+                  className="w-full p-4 rounded-xl border-2 border-transparent hover:border-cyan-200 bg-gradient-to-br from-white to-slate-50 hover:from-cyan-50 hover:to-blue-50 transition-all duration-200 text-left group"
+                >
+                  <div className="flex items-start space-x-4">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${session.color} flex items-center justify-center text-2xl shadow-lg group-hover:scale-105 transition-transform`}>
+                      {session.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-slate-800 group-hover:text-slate-900">
+                        {session.title}
+                      </h3>
+                      <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                        {session.description}
+                      </p>
+                    </div>
+                    <div className="text-cyan-500 group-hover:text-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      →
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="p-6 border-t border-slate-200/60 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="text-center">
+                <p className="text-sm text-slate-600 mb-3">
+                  ✨ <strong>Advanced Voice Technology:</strong> Natural conversation with Mayo Clinic-backed health insights
+                </p>
+                <button
+                  onClick={() => setShowSessionMenu(false)}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voice Coaching Session */}
+      <VoiceCoachingSession
+        user={user}
+        isOpen={showVoiceCoaching}
+        onClose={() => setShowVoiceCoaching(false)}
+        sessionType={selectedSessionType}
+      />
     </div>
   );
 };
