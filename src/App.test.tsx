@@ -7,3 +7,9 @@ test('renders health coaching app welcome message', () => {
   const welcomeElement = screen.getByText(/Welcome to Your Health Journey/i);
   expect(welcomeElement).toBeInTheDocument();
 });
+
+test('renders bearable health coach title', () => {
+  render(<App />);
+  const titleElement = screen.getByText(/Bearable Health Coach/i);
+  expect(titleElement).toBeInTheDocument();
+});
