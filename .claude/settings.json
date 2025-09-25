@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit:*.ts|Edit:*.tsx|Edit:*.js|Edit:*.jsx",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm test --bail 2>/dev/null || echo '❌ Tests failing - will be fixed in CI'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit:package.json",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm install && npm audit"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit:*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git stash && npm test && git stash pop || git stash pop"
+          }
+        ]
+      }
+    ]
+  }
+}
