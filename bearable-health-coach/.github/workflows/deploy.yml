@@ -2,9 +2,9 @@ name: Deploy BearAble Health Coach
 
 on:
   push:
-    branches: [ bearable-auth, main ]
+    branches: [ bearable-auth, bearable-auth-clean, main ]
   pull_request:
-    branches: [ bearable-auth, main ]
+    branches: [ bearable-auth, bearable-auth-clean, main ]
 
 jobs:
   verify-and-test:
@@ -60,7 +60,7 @@ jobs:
   deploy-production:
     needs: verify-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/bearable-auth' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/bearable-auth' || github.ref == 'refs/heads/bearable-auth-clean') && github.event_name == 'push'
 
     steps:
       - name: Checkout code
