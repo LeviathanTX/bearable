@@ -24,12 +24,18 @@ export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Realtime service instance
-  const [realtimeService] = useState(() => {
+  // Realtime service instance - use useRef to make it stable
+  const realtimeServiceRef = useRef<RealtimeVoiceService | null>(null);
+
+  // Initialize service only once
+  if (!realtimeServiceRef.current) {
     const apiKey = process.env.REACT_APP_OPENAI_API_KEY || '';
-    return createHealthCoachRealtimeService(apiKey);
-  });
+    realtimeServiceRef.current = createHealthCoachRealtimeService(apiKey);
+  }
+
+  const realtimeService = realtimeServiceRef.current;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentTranscriptRef = useRef('');
@@ -144,8 +150,8 @@ export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
       }
     };
 
-    // Add welcome message
-    if (messages.length === 0) {
+    // Add welcome message and initialize only once
+    if (!isInitialized) {
       const welcomeMessage: Message = {
         id: 'welcome-realtime-1',
         role: 'assistant',
@@ -155,13 +161,14 @@ export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
         metadata: { inputType: 'text', source: 'system' }
       };
       setMessages([welcomeMessage]);
+      setIsInitialized(true);
 
       // Auto-connect after welcome message
       setTimeout(() => {
         initializeRealtimeConversation();
       }, 1000);
     }
-  }, [user.name, realtimeService]);
+  }, [user.name, isInitialized]); // Added isInitialized to prevent re-initialization
 
   // Handle text input (hybrid mode)
   const handleSendMessage = async () => {
