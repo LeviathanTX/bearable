@@ -1,0 +1,11 @@
+[providers.node]
+version = "18"
+
+[phases.build]
+cmds = ['cd bearable-health-coach/backend && npm install']
+
+[phases.start]
+cmd = 'cd bearable-health-coach/backend && node server.js'
+
+[variables]
+NODE_ENV = 'production'
