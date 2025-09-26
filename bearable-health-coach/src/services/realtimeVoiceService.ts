@@ -103,9 +103,10 @@ export class RealtimeVoiceService {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('✅ Connected to OpenAI Realtime API');
+        console.log('✅ WebSocket opened - Connected to proxy server');
         this.connected = true;
         this.onStatusCallback?.(('connected'));
+        console.log('🎯 Initializing session...');
         this.initializeSession();
       };
 
@@ -118,6 +119,7 @@ export class RealtimeVoiceService {
           } else {
             // Handle JSON messages
             const data = typeof event.data === 'string' ? event.data : event.data.toString();
+            console.log('📨 Received message from server:', data.substring(0, 200) + '...');
             this.handleRealtimeEvent(JSON.parse(data));
           }
         } catch (error) {
@@ -126,15 +128,16 @@ export class RealtimeVoiceService {
         }
       };
 
-      this.ws.onclose = () => {
-        console.log('🔌 Disconnected from Realtime API');
+      this.ws.onclose = (event) => {
+        console.log(`🔌 WebSocket closed - Code: ${event.code}, Reason: ${event.reason || 'No reason given'}`);
+        console.log(`🔍 Was clean close: ${event.wasClean}`);
         this.connected = false;
         this.onStatusCallback?.(('disconnected'));
         this.cleanup();
       };
 
       this.ws.onerror = (error) => {
-        console.error('❌ Realtime API WebSocket error:', error);
+        console.error('❌ WebSocket error event:', error);
         console.warn('🔄 Realtime API unavailable - this usually means the backend server is not deployed');
         console.info('💡 The app will still work with basic voice features using browser TTS/STT');
         this.onStatusCallback?.(('error'));
@@ -185,11 +188,23 @@ export class RealtimeVoiceService {
     this.onErrorCallback = onError;
     this.onStatusCallback = onStatus;
 
-    if (!this.connected) {
-      await this.connect();
-    }
+    try {
+      if (!this.connected) {
+        await this.connect();
+      }
 
-    await this.startAudioCapture();
+      // Don't fail the entire connection if audio capture fails
+      try {
+        await this.startAudioCapture();
+      } catch (audioError) {
+        console.warn('⚠️ Audio capture failed, but WebSocket connection maintained:', audioError);
+        this.onErrorCallback?.(`Audio capture failed: ${audioError}. You can still use text mode.`);
+      }
+    } catch (connectionError) {
+      console.error('❌ Failed to start conversation:', connectionError);
+      this.onErrorCallback?.(`Connection failed: ${connectionError}`);
+      throw connectionError;
+    }
   }
 
   // Start audio input capture with Voice Activity Detection
@@ -420,11 +435,13 @@ export class RealtimeVoiceService {
   // Send event to Realtime API
   private sendEvent(event: RealtimeEvent) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('Cannot send event - WebSocket not ready');
+      console.warn('⚠️ Cannot send event - WebSocket not ready, state:', this.ws?.readyState);
       return;
     }
 
-    this.ws.send(JSON.stringify(event));
+    const eventStr = JSON.stringify(event);
+    console.log('📤 Sending event:', event.type, eventStr.substring(0, 300) + '...');
+    this.ws.send(eventStr);
   }
 
   // Interrupt current AI response (for natural conversation)

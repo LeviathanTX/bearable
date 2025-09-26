@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AICompanion, User, Conversation, Message } from '../types';
 import { AIService } from '../services/aiService';
 import { VoiceService } from '../services/voiceService';
-import { PremiumVoiceService } from '../services/premiumVoiceService';
-import { VoiceCharacterSelector } from './VoiceCharacterSelector';
+import { VoiceSettingsComponent } from './VoiceSettings';
 
 interface ChatInterfaceProps {
   user: User;
@@ -27,31 +26,35 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [micEnabled, setMicEnabled] = useState(true);
+  const [isVoiceInput, setIsVoiceInput] = useState(false);
+  const [hasAutoStartedVoice, setHasAutoStartedVoice] = useState(false);
   const [aiService] = useState(() => new AIService());
   const [voiceService] = useState(() => new VoiceService());
-  const [premiumVoiceService] = useState(() => new PremiumVoiceService());
+  // const [premiumVoiceService] = useState(() => new PremiumVoiceService());
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
-  const [selectedVoiceCharacter, setSelectedVoiceCharacter] = useState(PremiumVoiceService.WELLNESS_BEAR);
+  // const [selectedVoiceCharacter, setSelectedVoiceCharacter] = useState(PremiumVoiceService.WELLNESS_BEAR);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Voice interaction handlers
   const handleVoiceInput = async () => {
     try {
-      // Toggle mic enabled/disabled if not currently active
-      if (!isListening && !isSpeaking) {
-        setMicEnabled(!micEnabled);
-        return;
-      }
-
-      // Don't start listening if mic is disabled or AI is speaking
-      if (!micEnabled || isSpeaking) {
-        console.log('Cannot start voice input: mic disabled or AI speaking');
-        return;
-      }
-
+      // If currently listening, stop listening
       if (isListening) {
         voiceService.stopListening();
         setIsListening(false);
+        setVoiceTranscript('');
+        return;
+      }
+
+      // Don't start listening if AI is speaking
+      if (isSpeaking) {
+        console.log('Cannot start voice input: AI is speaking');
+        return;
+      }
+
+      // Check if mic is disabled before trying to start
+      if (!micEnabled) {
+        console.log('Microphone is disabled');
         return;
       }
 
@@ -60,22 +63,34 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       await voiceService.startHealthConversation(
         (transcript, isFinal) => {
+          console.log('Voice transcript:', transcript, 'Final:', isFinal);
           setVoiceTranscript(transcript);
+
           if (isFinal && transcript.trim()) {
-            setInputMessage(transcript.trim());
+            // Set the message and stop listening
+            const finalMessage = transcript.trim();
             setIsListening(false);
+            setVoiceTranscript('');
+            // Set the input message and mark as voice input for auto-submit
+            setIsVoiceInput(true);
+            setInputMessage(finalMessage);
           }
         },
         (error) => {
           console.error('Voice input error:', error);
           setIsListening(false);
           setVoiceTranscript('');
+          setIsVoiceInput(false); // Reset voice flag on error
+          // Show user-friendly error
+          alert('Voice recognition error. Please try again or type your message.');
         }
       );
     } catch (error) {
       console.error('Voice service error:', error);
       setIsListening(false);
       setVoiceTranscript('');
+      setIsVoiceInput(false); // Reset voice flag on error
+      alert('Failed to start voice recognition. Please check your microphone permissions.');
     }
   };
 
@@ -84,7 +99,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       if (isSpeaking) {
         // Stop current voice (works for both services)
         voiceService.stopSpeaking();
-        premiumVoiceService.stopCurrentAudio();
+        // premiumVoiceService.stopCurrentAudio();
         setIsSpeaking(false);
         return;
       }
@@ -130,7 +145,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const welcomeMessage: Message = {
         id: 'welcome-1',
         role: 'assistant',
-        content: `Hello ${user.name}! I'm your Bearable AI health companion, powered by Mayo Clinic's lifestyle medicine expertise. I'm here to support you on your wellness journey.\\n\\nHow are you feeling today, and what would you like to work on?`,
+        content: `Hello ${user.name}! I'm Bearable, your AI health coach powered by Mayo Clinic's lifestyle medicine expertise. I'm here to support you on your wellness journey.\\n\\nHow are you feeling today, and what would you like to work on?`,
         type: 'text',
         timestamp: new Date(),
         metadata: {
@@ -150,22 +165,51 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [user.name, voiceService, messages.length]);
 
-  // Auto-start voice if requested
+  // Auto-start voice if requested (but only once)
   useEffect(() => {
-    if (startWithVoice && messages.length > 0 && !isListening && !isSpeaking) {
+    if (startWithVoice && messages.length > 0 && !isListening && !isSpeaking && micEnabled && !hasAutoStartedVoice) {
       // Small delay to let the UI render
       setTimeout(() => {
         handleVoiceInput();
+        setHasAutoStartedVoice(true); // Mark as auto-started to prevent repeated attempts
       }, 1000);
     }
-  }, [startWithVoice, messages.length, isListening, isSpeaking]);
+  }, [startWithVoice, messages.length, isListening, isSpeaking, micEnabled, hasAutoStartedVoice]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  // Debug: Track microphone state changes
+  useEffect(() => {
+    console.log('Microphone state changed to:', micEnabled ? 'enabled' : 'disabled');
+  }, [micEnabled]);
+
+  // Auto-submit voice messages only
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (isVoiceInput && inputMessage.trim() && !isListening && !isTyping) {
+      // Small delay to ensure voice transcription is complete
+      timeoutId = setTimeout(() => {
+        // Create a synthetic form event to trigger submission
+        const syntheticEvent = new Event('submit', { bubbles: true, cancelable: true });
+        handleSendMessage(syntheticEvent);
+        setIsVoiceInput(false); // Reset flag after submission
+      }, 500);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isVoiceInput, inputMessage, isListening, isTyping]);
+
+  const handleSendMessage = async (e: React.FormEvent | Event) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
     const currentInput = inputMessage.trim();
+    const wasVoiceInput = isVoiceInput; // Capture current voice state
     setInputMessage('');
+    setIsVoiceInput(false); // Reset voice flag
 
     // Add user message
     const userMessage: Message = {
@@ -204,12 +248,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(prev => [...prev, message]);
 
-      // Auto-speak the response if voice is enabled
-      if (process.env.REACT_APP_VOICE_ENABLED === 'true') {
-        // Small delay to let user finish reading
+      // Auto-speak the response only if it was a voice input
+      if (process.env.REACT_APP_VOICE_ENABLED === 'true' && wasVoiceInput) {
+        // Small delay to let user see the response
         setTimeout(() => {
           handleSpeakResponse(aiResponse.content);
-        }, 1000);
+        }, 800);
       }
 
     } catch (error) {
@@ -262,7 +306,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             title="Choose Voice Character"
           >
             <span>🎭</span>
-            <span>{selectedVoiceCharacter.name}</span>
+            <span>Voice Settings</span>
           </button>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full animate-pulse-slow shadow-sm"></div>
@@ -303,7 +347,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       onClick={() => {
                         if (isSpeaking) {
                           voiceService.stopSpeaking();
-                          premiumVoiceService.stopCurrentAudio();
+                          // premiumVoiceService.stopCurrentAudio();
                           setIsSpeaking(false);
                         } else {
                           handleSpeakResponse(message.content);
@@ -373,7 +417,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <button
                   onClick={() => {
                     voiceService.stopSpeaking();
-                    premiumVoiceService.stopCurrentAudio();
+                    // premiumVoiceService.stopCurrentAudio();
                     setIsSpeaking(false);
                   }}
                   className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-full text-xs transition-colors"
@@ -431,7 +475,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <button
               onClick={() => {
                 voiceService.stopSpeaking();
-                premiumVoiceService.stopCurrentAudio();
+                // premiumVoiceService.stopCurrentAudio();
                 setIsSpeaking(false);
               }}
               className="flex items-center space-x-1 px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-full transition-colors"
@@ -443,59 +487,60 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        {/* Voice transcript display */}
-        {voiceTranscript && (
+        {/* Voice listening indicator */}
+        {isListening && (
+          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <p className="text-sm text-green-700">
+                <span className="font-medium">🎤 Listening...</span>
+                {voiceTranscript ? (
+                  <span className="ml-2">"{voiceTranscript}"</span>
+                ) : (
+                  <span className="ml-2 text-green-600">Start speaking now</span>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Voice transcript display for when not actively listening but have transcript */}
+        {voiceTranscript && !isListening && (
           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-700">
-              <span className="font-medium">Listening:</span> {voiceTranscript}
+              <span className="font-medium">Processing:</span> {voiceTranscript}
             </p>
           </div>
         )}
 
         <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-          <div className="relative">
+          <div className="relative flex items-center space-x-2">
             <button
               type="button"
               onClick={handleVoiceInput}
-              onDoubleClick={async () => {
-                if (micEnabled && !isSpeaking && !isListening) {
-                  setIsListening(true);
-                  setVoiceTranscript('');
-
-                  await voiceService.startHealthConversation(
-                    (transcript, isFinal) => {
-                      setVoiceTranscript(transcript);
-                      if (isFinal && transcript.trim()) {
-                        setInputMessage(transcript.trim());
-                        setIsListening(false);
-                      }
-                    },
-                    (error) => {
-                      console.error('Voice input error:', error);
-                      setIsListening(false);
-                      setVoiceTranscript('');
-                    }
-                  );
-                }
+              onContextMenu={(e) => {
+                e.preventDefault();
+                console.log('Microphone toggle:', micEnabled ? 'disabled' : 'enabled');
+                setMicEnabled(!micEnabled);
               }}
               disabled={isTyping}
               className={`p-3 rounded-full transition-all duration-200 ${
                 !micEnabled
                   ? 'bg-gray-200 text-gray-400'
                   : isListening
-                  ? 'bg-red-100 text-red-600 animate-pulse'
+                  ? 'bg-red-100 text-red-600 animate-pulse ring-2 ring-red-300'
                   : isSpeaking
                   ? 'bg-amber-100 text-amber-600'
                   : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
               }`}
               title={
                 !micEnabled
-                  ? 'Microphone disabled - Click to enable'
+                  ? 'Microphone disabled - Right-click to enable'
                   : isSpeaking
                   ? 'AI is speaking...'
                   : isListening
                   ? 'Listening - Click to stop'
-                  : 'Click to toggle mic, Double-click to listen'
+                  : 'Click to start voice input. Right-click to disable mic.'
               }
             >
               {!micEnabled ? '🎤❌' : isSpeaking ? '🔊' : isListening ? '🎙️' : '🎤'}
@@ -503,12 +548,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {!micEnabled && (
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
             )}
+
+            {/* Quick Voice Quality Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                // Toggle between basic and high-quality voice
+                const currentVoice = voiceService.getDefaultVoice();
+                console.log('Current voice:', currentVoice?.name);
+                // Force refresh voice selection
+                // voiceService.loadVoices(); // Private method - removed
+                const newVoice = voiceService.getDefaultVoice();
+                console.log('New voice:', newVoice?.name);
+              }}
+              className="p-2 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
+              title="Refresh voice selection for better quality"
+            >
+              🎵
+            </button>
           </div>
 
           <input
             type="text"
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={(e) => {
+              setInputMessage(e.target.value);
+              setIsVoiceInput(false); // Reset voice flag when user types manually
+            }}
             placeholder={isListening ? 'Listening...' : 'Ask about sleep, nutrition, exercise, stress management...'}
             className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isTyping || isListening}
@@ -525,15 +591,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </form>
       </div>
 
-      {/* Voice Character Selector */}
-      <VoiceCharacterSelector
-        isOpen={showVoiceSelector}
-        onClose={() => setShowVoiceSelector(false)}
-        onSelectCharacter={(character) => {
-          setSelectedVoiceCharacter(character);
-          console.log('Selected voice character:', character.name);
-        }}
-      />
+      {/* Voice Settings */}
+      {showVoiceSelector && (
+        <VoiceSettingsComponent
+          isOpen={showVoiceSelector}
+          onClose={() => setShowVoiceSelector(false)}
+          onSettingsChange={(settings) => {
+            console.log('Voice settings updated:', settings);
+            // Apply voice settings to the voice service
+            // TODO: Integrate with voice service to apply settings
+          }}
+        />
+      )}
     </div>
   );
 };

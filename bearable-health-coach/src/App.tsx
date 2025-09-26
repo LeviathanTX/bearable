@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { User, AICompanion, AppState, Conversation } from './types';
+import { User, AICompanion, AppState, Conversation, CoachTeam, CarePlan } from './types';
 import { BearCompanion } from './components/BearCompanion';
 import { ChatInterface } from './components/ChatInterface';
+import { RealtimeChatInterface } from './components/RealtimeChatInterface';
 import { ActivityLog } from './components/ActivityLog';
 import { CaregiverDashboard } from './components/CaregiverDashboard';
 import { HealthGoals } from './components/HealthGoals';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { CoachTeamSelector } from './components/CoachTeamSelector';
+import { CarePlanDashboard } from './components/CarePlanDashboard';
+import { CoachTeamService } from './services/coachTeamService';
+import { CarePlanService } from './services/carePlanService';
 import './App.css';
 
 // Mock data for demonstration
@@ -42,34 +47,34 @@ const mockUser: User = {
   }
 };
 
-const mockCompanion: AICompanion = {
-  id: 'care-bear-1',
-  name: 'Wellness Bear',
-  personality: 'supportive',
-  expertise: ['lifestyle medicine', 'behavioral change', 'Mayo Clinic protocols'],
-  avatar: '🐻',
-  isActive: true
-};
+// The coach team will be dynamically created based on the user
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
     currentUser: null,
-    activeCompanion: mockCompanion,
+    coachTeam: null,
+    activeCoach: null,
+    currentCarePlan: null,
     currentView: 'dashboard',
     isLoading: false,
-    error: null
+    error: null,
+    pendingEscalations: []
   });
 
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [startChatWithVoice, setStartChatWithVoice] = useState(false);
+  const [useRealtimeAPI, setUseRealtimeAPI] = useState(true); // Enable Realtime API by default
 
   useEffect(() => {
     // Simulate loading user data
     setTimeout(() => {
+      const coachTeam = CoachTeamService.createCoachTeam(mockUser);
       setAppState(prev => ({
         ...prev,
         currentUser: mockUser,
+        coachTeam,
+        activeCoach: coachTeam.primaryCoach,
         isLoading: false
       }));
     }, 1000);
@@ -77,9 +82,12 @@ function App() {
 
   const handleStartJourney = (userName: string) => {
     const updatedUser = { ...mockUser, name: userName };
+    const coachTeam = CoachTeamService.createCoachTeam(updatedUser);
     setAppState(prev => ({
       ...prev,
-      currentUser: updatedUser
+      currentUser: updatedUser,
+      coachTeam,
+      activeCoach: coachTeam.primaryCoach
     }));
     setShowWelcome(false);
   };
@@ -90,6 +98,22 @@ function App() {
     if (view !== 'chat') {
       setStartChatWithVoice(false);
     }
+  };
+
+  const handleCoachSelect = (coach: AICompanion) => {
+    setAppState(prev => ({ ...prev, activeCoach: coach }));
+  };
+
+  const handleStartConversation = (coach: AICompanion) => {
+    setAppState(prev => ({ ...prev, activeCoach: coach, currentView: 'chat' }));
+  };
+
+  const handleCarePlanCreate = (carePlan: CarePlan) => {
+    setAppState(prev => ({ ...prev, currentCarePlan: carePlan }));
+  };
+
+  const handleCarePlanUpdate = (carePlan: CarePlan) => {
+    setAppState(prev => ({ ...prev, currentCarePlan: carePlan }));
   };
 
   if (showWelcome || !appState.currentUser) {
@@ -106,7 +130,10 @@ function App() {
               <div className="bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
                 🐻
               </div>
-              <h1 className="text-xl font-semibold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">Bearable Health Coach</h1>
+              <div>
+                <h1 className="text-xl font-semibold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">Bearable AI Coach</h1>
+                <p className="text-xs text-gray-500">Mayo Clinic Lifestyle Medicine Platform</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-slate-600">
@@ -123,45 +150,63 @@ function App() {
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            {[
-              { id: 'dashboard', label: '🏠 Dashboard', view: 'dashboard' as const },
-              { id: 'chat', label: '💬 Chat', view: 'chat' as const },
-              { id: 'goals', label: '🎯 Goals', view: 'goals' as const },
-              { id: 'activity', label: '📊 Activity', view: 'activity' as const },
-              { id: 'caregivers', label: '👥 Caregivers', view: 'caregivers' as const }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => handleViewChange(tab.view)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-                  appState.currentView === tab.view
-                    ? 'border-cyan-500 text-cyan-600 bg-cyan-50/50'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50/30'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-8">
+              {[
+                { id: 'dashboard', label: '🏠 Dashboard', view: 'dashboard' as const },
+                { id: 'chat', label: '💬 Chat', view: 'chat' as const },
+                { id: 'care_plan', label: '📋 Care Plan', view: 'care_plan' as const },
+                { id: 'goals', label: '🎯 Goals', view: 'goals' as const },
+                { id: 'activity', label: '📊 Activity', view: 'activity' as const },
+                { id: 'caregivers', label: '👥 Caregivers', view: 'caregivers' as const }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleViewChange(tab.view)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                    appState.currentView === tab.view
+                      ? 'border-cyan-500 text-cyan-600 bg-cyan-50/50'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50/30'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Realtime API Toggle */}
+            {appState.currentView === 'chat' && (
+              <div className="flex items-center space-x-3 py-2">
+                <span className="text-sm text-slate-600">Voice Mode:</span>
+                <button
+                  onClick={() => setUseRealtimeAPI(!useRealtimeAPI)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                    useRealtimeAPI
+                      ? 'bg-gradient-to-r from-green-400 to-blue-500 text-white shadow-lg'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                >
+                  {useRealtimeAPI ? '🚀 Realtime AI' : '🎙️ Basic Voice'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {appState.currentView === 'dashboard' && appState.activeCompanion && (
+        {appState.currentView === 'dashboard' && appState.coachTeam && appState.currentUser && (
           <div className="space-y-6">
-            <BearCompanion
-              companion={appState.activeCompanion}
+            <CoachTeamSelector
               user={appState.currentUser}
-              onStartChat={() => handleViewChange('chat')}
-              onStartVoiceChat={() => {
-                setStartChatWithVoice(true);
-                handleViewChange('chat');
-              }}
+              coachTeam={appState.coachTeam}
+              activeCoach={appState.activeCoach!}
+              onCoachSelect={handleCoachSelect}
+              onStartConversation={handleStartConversation}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <HealthGoals userId={appState.currentUser.id} />
+              <HealthGoals userId={appState.currentUser!.id} />
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Today's Progress</h3>
                 <div className="space-y-3">
@@ -185,21 +230,41 @@ function App() {
           </div>
         )}
 
-        {appState.currentView === 'chat' && appState.activeCompanion && (
-          <ChatInterface
+        {appState.currentView === 'chat' && appState.activeCoach && appState.currentUser && (
+          useRealtimeAPI ? (
+            <RealtimeChatInterface
+              user={appState.currentUser}
+              companion={appState.activeCoach}
+              conversation={currentConversation}
+              onConversationUpdate={setCurrentConversation}
+              startWithVoice={startChatWithVoice}
+            />
+          ) : (
+            <ChatInterface
+              user={appState.currentUser}
+              companion={appState.activeCoach}
+              conversation={currentConversation}
+              onConversationUpdate={setCurrentConversation}
+              startWithVoice={startChatWithVoice}
+            />
+          )
+        )}
+
+        {appState.currentView === 'care_plan' && appState.coachTeam && appState.currentUser && (
+          <CarePlanDashboard
             user={appState.currentUser}
-            companion={appState.activeCompanion}
-            conversation={currentConversation}
-            onConversationUpdate={setCurrentConversation}
-            startWithVoice={startChatWithVoice}
+            coachTeam={appState.coachTeam}
+            carePlan={appState.currentCarePlan}
+            onCarePlanUpdate={handleCarePlanUpdate}
+            onCreateCarePlan={handleCarePlanCreate}
           />
         )}
 
-        {appState.currentView === 'goals' && (
+        {appState.currentView === 'goals' && appState.currentUser && (
           <HealthGoals userId={appState.currentUser.id} />
         )}
 
-        {appState.currentView === 'activity' && (
+        {appState.currentView === 'activity' && appState.currentUser && (
           <ActivityLog userId={appState.currentUser.id} />
         )}
 
@@ -212,7 +277,7 @@ function App() {
       <footer className="bg-white border-t border-gray-200 mt-auto">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-500">
-            Powered by Bearable AI × Mayo Clinic Lifestyle Medicine
+            Powered by BearAble AI × Mayo Clinic Lifestyle Medicine Platform
           </div>
         </div>
       </footer>

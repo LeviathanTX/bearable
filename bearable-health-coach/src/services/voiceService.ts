@@ -76,7 +76,7 @@ export class VoiceService {
     }
   }
 
-  private loadVoices() {
+  public loadVoices() {
     // Load available voices
     this.voices = this.speechSynthesis.getVoices();
 
@@ -84,8 +84,39 @@ export class VoiceService {
     if (this.voices.length === 0) {
       this.speechSynthesis.onvoiceschanged = () => {
         this.voices = this.speechSynthesis.getVoices();
+        console.log(`🎙️ Voices loaded: ${this.voices.length} available`);
       };
+      // Trigger voices loading in Chrome
+      this.speechSynthesis.cancel();
+    } else {
+      console.log(`🎙️ Voices already available: ${this.voices.length}`);
     }
+  }
+
+  // Ensure voices are loaded before using them
+  async ensureVoicesLoaded(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.voices.length > 0) {
+        resolve();
+        return;
+      }
+
+      const checkVoices = () => {
+        this.voices = this.speechSynthesis.getVoices();
+        if (this.voices.length > 0) {
+          console.log(`🎙️ Voices loaded: ${this.voices.length} available`);
+          resolve();
+        } else {
+          // Try again in a moment
+          setTimeout(checkVoices, 100);
+        }
+      };
+
+      this.speechSynthesis.onvoiceschanged = checkVoices;
+      // Trigger voice loading
+      this.speechSynthesis.cancel();
+      checkVoices();
+    });
   }
 
   // Check if voice features are supported
@@ -104,14 +135,14 @@ export class VoiceService {
 
   // Get the most human-sounding voice for health coaching
   getDefaultVoice(): SpeechSynthesisVoice | null {
-    // Ultra-priority: Most human-sounding voices first
+    // Ultra-priority: Most human-sounding voices first (updated for Chrome)
     const ultraNaturalVoices = [
-      // iOS/macOS Neural/Enhanced voices (most human)
+      // Google's premium neural voices (best for Chrome)
+      'Google US English Female', 'Google UK English Female', 'Google AU English Female',
+      'Google US English', 'Google UK English Male',
+      // iOS/macOS Neural/Enhanced voices (most human on Mac)
       'Samantha (Enhanced)', 'Allison (Enhanced)', 'Ava (Enhanced)', 'Susan (Enhanced)',
-      'Victoria (Enhanced)', 'Karen (Enhanced)',
-      // Google's premium neural voices
-      'Google US English Female', 'Google US English',
-      'Chrome OS US English Female', 'Chrome OS English Female',
+      'Victoria (Enhanced)', 'Karen (Enhanced)', 'Samantha', 'Allison',
       // Windows Neural voices
       'Microsoft Aria Online (Natural) - English (United States)',
       'Microsoft Jenny Online (Natural) - English (United States)',
@@ -196,6 +227,9 @@ export class VoiceService {
       throw new Error('Speech synthesis not supported');
     }
 
+    // Ensure voices are loaded first
+    await this.ensureVoicesLoaded();
+
     // Stop any current speech
     this.stopSpeaking();
 
@@ -205,8 +239,8 @@ export class VoiceService {
       const utterance = new SpeechSynthesisUtterance(cleanText);
 
       // Configure voice settings for human-like speech
-      utterance.rate = config?.rate || 0.75; // Much slower, conversational pace
-      utterance.pitch = config?.pitch || 0.88; // Lower pitch for warmth and authority
+      utterance.rate = config?.rate || 0.85; // Natural conversational pace
+      utterance.pitch = config?.pitch || 1.0; // Natural pitch for better quality
       utterance.volume = config?.volume || 0.95;
       utterance.lang = config?.language || 'en-US';
 
@@ -279,16 +313,23 @@ export class VoiceService {
 
     if (this.isListening) {
       this.stopListening();
+      // Wait a moment for cleanup before starting again
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     return new Promise((resolve, reject) => {
+      let hasStarted = false;
+
       this.speechRecognition.onstart = () => {
+        console.log('Speech recognition started');
         this.isListening = true;
+        hasStarted = true;
         onStart?.();
         resolve();
       };
 
       this.speechRecognition.onresult = (event: any) => {
+        console.log('Speech recognition result event:', event);
         const results = event.results;
         const lastResult = results[results.length - 1];
 
@@ -297,26 +338,59 @@ export class VoiceService {
           const confidence = lastResult[0].confidence || 0.8;
           const isFinal = lastResult.isFinal;
 
+          console.log('Processing transcript:', transcript, 'Final:', isFinal, 'Confidence:', confidence);
+
           onResult({
             transcript: transcript.trim(),
             confidence,
             isFinal
           });
+
+          // If final result, automatically stop listening
+          if (isFinal) {
+            console.log('Final result received, stopping listening');
+            setTimeout(() => {
+              this.stopListening();
+            }, 100);
+          }
         }
       };
 
       this.speechRecognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
         this.isListening = false;
-        onError?.(event.error);
-        reject(new Error(`Speech recognition error: ${event.error}`));
+
+        // Don't trigger error for "no-speech" - it's normal
+        if (event.error !== 'no-speech') {
+          onError?.(event.error);
+          reject(new Error(`Speech recognition error: ${event.error}`));
+        } else {
+          console.log('No speech detected, continuing...');
+        }
       };
 
       this.speechRecognition.onend = () => {
+        console.log('Speech recognition ended');
         this.isListening = false;
         onEnd?.();
+
+        // If recognition ended but we haven't started, it's likely an error
+        if (!hasStarted) {
+          reject(new Error('Speech recognition failed to start'));
+        }
       };
 
-      this.speechRecognition.start();
+      // Configure recognition settings
+      this.speechRecognition.continuous = false; // Stop after each complete phrase
+      this.speechRecognition.interimResults = true;
+      this.speechRecognition.maxAlternatives = 1;
+
+      try {
+        this.speechRecognition.start();
+      } catch (error) {
+        this.isListening = false;
+        reject(error);
+      }
     });
   }
 
@@ -424,21 +498,50 @@ export class VoiceService {
       return;
     }
 
-    return this.startListening(
-      (result) => {
-        onTranscript(result.transcript, result.isFinal);
-      },
-      (error) => {
-        onError?.(`Voice recognition error: ${error}`);
-      },
-      () => {
-        // Started listening
-        console.log('Started listening for health conversation');
-      },
-      () => {
-        // Ended listening
-        console.log('Ended listening');
-      }
-    );
+    // Add automatic timeout to prevent getting stuck in listening state
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const startListening = async () => {
+      // Set a 30-second timeout for voice input
+      timeoutId = setTimeout(() => {
+        console.log('Voice input timeout, stopping listening');
+        this.stopListening();
+        onError?.('Voice input timeout - please try again');
+      }, 30000);
+
+      return this.startListening(
+        (result) => {
+          onTranscript(result.transcript, result.isFinal);
+
+          // If we get a final result, clear the timeout
+          if (result.isFinal && timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+        },
+        (error) => {
+          // Clear timeout on error
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          onError?.(`Voice recognition error: ${error}`);
+        },
+        () => {
+          // Started listening
+          console.log('Started listening for health conversation');
+        },
+        () => {
+          // Ended listening
+          console.log('Ended listening');
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+        }
+      );
+    };
+
+    return startListening();
   }
 }

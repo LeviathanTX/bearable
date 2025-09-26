@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AICompanion, User } from '../types';
-import { PremiumVoiceService } from '../services/premiumVoiceService';
 
 interface BearCompanionProps {
   companion: AICompanion;

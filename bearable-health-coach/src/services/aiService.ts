@@ -59,6 +59,11 @@ export class AIService {
 
   constructor() {
     this.openai = getOpenAI();
+    if (this.openai) {
+      console.log('✅ AI Service initialized with OpenAI API');
+    } else {
+      console.log('⚠️ AI Service running in demo mode (no API key)');
+    }
   }
 
   async generateResponse(
@@ -76,6 +81,8 @@ export class AIService {
     }
 
     try {
+      console.log('🤖 AI Service: Making OpenAI API call...');
+
       // Build context-aware prompt
       let contextPrompt = '';
       if (context) {
@@ -87,7 +94,7 @@ ${context.emotionalState ? `- Current emotional state: ${context.emotionalState}
       }
 
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-4o-mini", // Use cheaper, faster model for health coaching
         messages: [
           { role: "system", content: SYSTEM_PROMPT + contextPrompt },
           { role: "user", content: userMessage }
@@ -99,6 +106,7 @@ ${context.emotionalState ? `- Current emotional state: ${context.emotionalState}
       });
 
       const content = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response right now. Please try again.";
+      console.log('✅ AI Service: OpenAI response received');
 
       return {
         content,
@@ -108,7 +116,8 @@ ${context.emotionalState ? `- Current emotional state: ${context.emotionalState}
       };
 
     } catch (error) {
-      console.error('AI Service Error:', error);
+      console.error('❌ AI Service Error:', error);
+      console.log('🔄 AI Service: Falling back to demo response');
       return this.getDemoResponse(userMessage);
     }
   }

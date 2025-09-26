@@ -222,7 +222,97 @@ export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
       if (isConnected) {
         await realtimeService.disconnect();
       } else {
-        await realtimeService.connect();
+        // Call startConversation instead of just connect to properly set up callbacks
+        await realtimeService.startConversation(
+          // Use the same callbacks as the auto-initialization
+          (text: string, isFinal: boolean) => {
+            console.log('📝 Transcript:', text, 'Final:', isFinal);
+            if (isFinal) {
+              const userMessage: Message = {
+                id: `user-${Date.now()}-${Math.random()}`,
+                role: 'user',
+                content: text,
+                type: 'voice',
+                timestamp: new Date(),
+                metadata: {
+                  source: 'realtime',
+                  inputType: 'voice'
+                }
+              };
+              setMessages(prev => [...prev, userMessage]);
+              setVoiceTranscript('');
+              currentTranscriptRef.current = '';
+            } else {
+              setVoiceTranscript(text);
+              currentTranscriptRef.current = text;
+            }
+          },
+          (responseText: string) => {
+            console.log('🤖 AI Response delta:', responseText);
+            currentResponseRef.current += responseText;
+            setMessages(prev => {
+              const lastMessage = prev[prev.length - 1];
+              if (lastMessage && lastMessage.role === 'assistant' &&
+                  lastMessage.metadata?.source === 'realtime' &&
+                  !lastMessage.metadata?.completed) {
+                return prev.map((msg, index) =>
+                  index === prev.length - 1
+                    ? { ...msg, content: currentResponseRef.current }
+                    : msg
+                );
+              } else {
+                const aiMessage: Message = {
+                  id: `ai-${Date.now()}-${Math.random()}`,
+                  role: 'assistant',
+                  content: currentResponseRef.current,
+                  type: 'voice',
+                  timestamp: new Date(),
+                  metadata: {
+                    inputType: 'voice',
+                    source: 'realtime',
+                    completed: false
+                  }
+                };
+                return [...prev, aiMessage];
+              }
+            });
+          },
+          (audioData: ArrayBuffer) => {
+            console.log('🔊 Received audio stream:', audioData.byteLength, 'bytes');
+          },
+          (error: string) => {
+            console.error('❌ Realtime conversation error:', error);
+            setConnectionStatus('error');
+            // Add user-friendly error message for payment issues
+            let userFriendlyError = error;
+            if (error.toLowerCase().includes('quota') || error.toLowerCase().includes('billing') ||
+                error.toLowerCase().includes('insufficient') || error.toLowerCase().includes('payment')) {
+              userFriendlyError = '💳 OpenAI account needs payment or has exceeded quota. Please check your OpenAI billing at https://platform.openai.com/account/billing';
+            }
+            const errorMessage: Message = {
+              id: `error-${Date.now()}`,
+              role: 'assistant',
+              content: `I'm experiencing technical difficulties: ${userFriendlyError}. You can still use text mode by typing below.`,
+              type: 'text',
+              timestamp: new Date(),
+              metadata: { inputType: 'text', source: 'error' }
+            };
+            setMessages(prev => [...prev, errorMessage]);
+          },
+          (status: 'connecting' | 'connected' | 'disconnected' | 'error') => {
+            console.log('🔗 Connection status:', status);
+            setConnectionStatus(status);
+            setIsConnected(status === 'connected');
+            if (status === 'connected') {
+              setMessages(prev => prev.map(msg =>
+                msg.role === 'assistant' && msg.metadata?.source === 'realtime'
+                  ? { ...msg, metadata: { ...msg.metadata, completed: true } }
+                  : msg
+              ));
+              currentResponseRef.current = '';
+            }
+          }
+        );
       }
     } catch (error) {
       console.error('Connection toggle failed:', error);

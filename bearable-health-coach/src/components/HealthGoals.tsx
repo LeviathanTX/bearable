@@ -11,49 +11,85 @@ export const HealthGoals: React.FC<HealthGoalsProps> = ({ userId }) => {
       id: 'goal-1',
       title: 'Walk 10,000 steps daily',
       description: 'Increase daily physical activity to improve cardiovascular health',
-      category: 'exercise',
+      category: 'physical_activity',
       target: '10,000 steps',
       timeline: '30 days',
       progress: 84,
       status: 'active',
       createdAt: new Date('2024-09-01'),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      assignedCoach: 'activity-specialist',
+      nudgeSettings: {
+        enabled: true,
+        frequency: 'medium',
+        preferredTypes: ['reminder', 'encouragement'],
+        personalizedStyle: 'motivational',
+        respectQuietHours: true,
+        adaptToMoodPattern: false
+      }
     },
     {
       id: 'goal-2',
       title: 'Sleep 8 hours nightly',
       description: 'Establish consistent sleep schedule for better recovery',
-      category: 'sleep',
+      category: 'restorative_sleep',
       target: '8 hours',
       timeline: '21 days',
       progress: 67,
       status: 'active',
       createdAt: new Date('2024-09-05'),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      assignedCoach: 'sleep-specialist',
+      nudgeSettings: {
+        enabled: true,
+        frequency: 'low',
+        preferredTypes: ['reminder', 'education'],
+        personalizedStyle: 'gentle',
+        respectQuietHours: true,
+        adaptToMoodPattern: true
+      }
     },
     {
       id: 'goal-3',
       title: 'Eat 5 servings of vegetables',
       description: 'Increase vegetable intake following Mayo Clinic nutrition guidelines',
-      category: 'nutrition',
+      category: 'optimal_nutrition',
       target: '5 servings daily',
       timeline: '28 days',
       progress: 43,
       status: 'active',
       createdAt: new Date('2024-09-10'),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      assignedCoach: 'nutrition-specialist',
+      nudgeSettings: {
+        enabled: true,
+        frequency: 'medium',
+        preferredTypes: ['education', 'encouragement'],
+        personalizedStyle: 'scientific',
+        respectQuietHours: true,
+        adaptToMoodPattern: false
+      }
     },
     {
       id: 'goal-4',
       title: 'Practice mindfulness daily',
       description: '10 minutes of meditation or deep breathing exercises',
-      category: 'stress',
+      category: 'stress_management',
       target: '10 minutes daily',
       timeline: '14 days',
       progress: 92,
       status: 'active',
       createdAt: new Date('2024-09-15'),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      assignedCoach: 'stress-specialist',
+      nudgeSettings: {
+        enabled: true,
+        frequency: 'low',
+        preferredTypes: ['reminder', 'challenge'],
+        personalizedStyle: 'gentle',
+        respectQuietHours: true,
+        adaptToMoodPattern: true
+      }
     }
   ]);
 
@@ -67,19 +103,23 @@ export const HealthGoals: React.FC<HealthGoalsProps> = ({ userId }) => {
   });
 
   const categoryColors = {
-    nutrition: 'bg-green-100 text-green-800 border-green-200',
-    exercise: 'bg-blue-100 text-blue-800 border-blue-200',
-    sleep: 'bg-purple-100 text-purple-800 border-purple-200',
-    stress: 'bg-orange-100 text-orange-800 border-orange-200',
+    optimal_nutrition: 'bg-green-100 text-green-800 border-green-200',
+    physical_activity: 'bg-blue-100 text-blue-800 border-blue-200',
+    restorative_sleep: 'bg-purple-100 text-purple-800 border-purple-200',
+    stress_management: 'bg-orange-100 text-orange-800 border-orange-200',
+    connectedness: 'bg-pink-100 text-pink-800 border-pink-200',
+    substance_avoidance: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     medication: 'bg-red-100 text-red-800 border-red-200',
     general: 'bg-gray-100 text-gray-800 border-gray-200'
   };
 
   const categoryIcons = {
-    nutrition: '🥗',
-    exercise: '🏃‍♀️',
-    sleep: '😴',
-    stress: '🧘‍♀️',
+    optimal_nutrition: '🥗',
+    physical_activity: '🏃‍♀️',
+    restorative_sleep: '😴',
+    stress_management: '🧘‍♀️',
+    connectedness: '🤝',
+    substance_avoidance: '🚭',
     medication: '💊',
     general: '🎯'
   };
@@ -98,7 +138,16 @@ export const HealthGoals: React.FC<HealthGoalsProps> = ({ userId }) => {
       progress: 0,
       status: 'active',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      assignedCoach: newGoal.category === 'general' ? 'primary-coach' : `${newGoal.category.split('_')[0]}-specialist`,
+      nudgeSettings: {
+        enabled: true,
+        frequency: 'medium',
+        preferredTypes: ['reminder', 'encouragement'],
+        personalizedStyle: 'motivational',
+        respectQuietHours: true,
+        adaptToMoodPattern: false
+      }
     };
 
     setGoals(prev => [...prev, goal]);
@@ -267,10 +316,12 @@ export const HealthGoals: React.FC<HealthGoalsProps> = ({ userId }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="general">General</option>
-                  <option value="nutrition">Nutrition</option>
-                  <option value="exercise">Exercise</option>
-                  <option value="sleep">Sleep</option>
-                  <option value="stress">Stress Management</option>
+                  <option value="optimal_nutrition">Nutrition</option>
+                  <option value="physical_activity">Physical Activity</option>
+                  <option value="restorative_sleep">Sleep</option>
+                  <option value="stress_management">Stress Management</option>
+                  <option value="connectedness">Connectedness</option>
+                  <option value="substance_avoidance">Substance Avoidance</option>
                   <option value="medication">Medication</option>
                 </select>
               </div>

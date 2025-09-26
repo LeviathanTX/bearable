@@ -17,7 +17,18 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({ userId }
         receiveAlerts: true,
         sendEncouragement: true,
         accessHealthData: false,
-        emergencyContact: true
+        emergencyContact: true,
+        modifyCarePlan: false,
+        escalateToPhysician: false,
+        accessMedicalHistory: false,
+        coordinateWithAI: true
+      },
+      escalationLevel: 'primary' as const,
+      communicationPreferences: {
+        preferredChannel: 'app' as const,
+        urgencyThreshold: 'medium' as const,
+        quietHours: { start: '22:00', end: '07:00' },
+        languages: ['en']
       },
       isActive: true,
       lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
@@ -32,7 +43,18 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({ userId }
         receiveAlerts: true,
         sendEncouragement: true,
         accessHealthData: true,
-        emergencyContact: true
+        emergencyContact: true,
+        modifyCarePlan: true,
+        escalateToPhysician: true,
+        accessMedicalHistory: true,
+        coordinateWithAI: true
+      },
+      escalationLevel: 'emergency' as const,
+      communicationPreferences: {
+        preferredChannel: 'phone' as const,
+        urgencyThreshold: 'high' as const,
+        quietHours: { start: '23:00', end: '06:00' },
+        languages: ['en']
       },
       isActive: true,
       lastActive: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
@@ -47,7 +69,18 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({ userId }
         receiveAlerts: false,
         sendEncouragement: true,
         accessHealthData: false,
-        emergencyContact: false
+        emergencyContact: false,
+        modifyCarePlan: false,
+        escalateToPhysician: false,
+        accessMedicalHistory: false,
+        coordinateWithAI: false
+      },
+      escalationLevel: 'secondary' as const,
+      communicationPreferences: {
+        preferredChannel: 'email' as const,
+        urgencyThreshold: 'low' as const,
+        quietHours: { start: '21:00', end: '08:00' },
+        languages: ['en']
       },
       isActive: true,
       lastActive: new Date(Date.now() - 6 * 60 * 60 * 1000) // 6 hours ago
@@ -101,6 +134,8 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({ userId }
     family: '👨‍👩‍👧‍👦 Family',
     friend: '👫 Friend',
     healthcare_provider: '🩺 Healthcare Provider',
+    physician: '👨‍⚕️ Physician',
+    nurse: '👩‍⚕️ Nurse',
     coach: '💪 Coach',
     other: '👤 Other'
   };
@@ -109,6 +144,8 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({ userId }
     family: 'bg-pink-100 text-pink-800',
     friend: 'bg-green-100 text-green-800',
     healthcare_provider: 'bg-blue-100 text-blue-800',
+    physician: 'bg-blue-100 text-blue-800',
+    nurse: 'bg-blue-100 text-blue-800',
     coach: 'bg-orange-100 text-orange-800',
     other: 'bg-gray-100 text-gray-800'
   };
@@ -136,7 +173,21 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({ userId }
         receiveAlerts: newInvite.relationship === 'healthcare_provider',
         sendEncouragement: true,
         accessHealthData: newInvite.relationship === 'healthcare_provider',
-        emergencyContact: newInvite.relationship === 'family' || newInvite.relationship === 'healthcare_provider'
+        emergencyContact: newInvite.relationship === 'family' || newInvite.relationship === 'healthcare_provider',
+        modifyCarePlan: newInvite.relationship === 'healthcare_provider',
+        escalateToPhysician: newInvite.relationship === 'healthcare_provider',
+        accessMedicalHistory: newInvite.relationship === 'healthcare_provider',
+        coordinateWithAI: newInvite.relationship === 'healthcare_provider'
+      },
+      escalationLevel: newInvite.relationship === 'healthcare_provider' ? 'primary' : 'secondary',
+      communicationPreferences: {
+        preferredChannel: newInvite.relationship === 'healthcare_provider' ? 'email' : 'sms',
+        urgencyThreshold: newInvite.relationship === 'healthcare_provider' ? 'medium' : 'low',
+        quietHours: {
+          start: '22:00',
+          end: '07:00'
+        },
+        languages: ['en']
       },
       isActive: false, // Will be active once they accept
       lastActive: new Date()
