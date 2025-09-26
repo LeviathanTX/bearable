@@ -96,7 +96,7 @@ export class RealtimeVoiceService {
 
       // Use our proxy server to handle WebSocket connection
       const wsUrl = process.env.NODE_ENV === 'production'
-        ? `wss://backend-cr15bg0mw-jeff-levines-projects.vercel.app/realtime`
+        ? `wss://bearable-production.up.railway.app/realtime`
         : `ws://localhost:3002/realtime`;
 
       console.log('🔗 Attempting to connect to:', wsUrl);
