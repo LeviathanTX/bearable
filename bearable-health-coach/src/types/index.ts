@@ -8,6 +8,7 @@ export interface User {
   createdAt: Date;
   preferences: UserPreferences;
   healthProfile: HealthProfile;
+  contactInfo: ContactInfo;
 }
 
 export interface UserPreferences {
@@ -23,6 +24,41 @@ export interface UserPreferences {
     shareWithCaregivers: boolean;
     allowDataCollection: boolean;
     publicProfile: boolean;
+  };
+  nudgingPreferences: NudgingPreferences;
+}
+
+export interface ContactInfo {
+  email: string;
+  phone?: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+}
+
+export interface NudgingPreferences {
+  enableNudging: boolean;
+  channels: {
+    inApp: boolean;
+    email: boolean;
+    sms: boolean;
+    phone: boolean;
+  };
+  frequency: 'minimal' | 'moderate' | 'active' | 'intensive';
+  types: {
+    healthReminders: boolean;
+    goalMotivation: boolean;
+    protocolAdherence: boolean;
+    achievements: boolean;
+    checkIns: boolean;
+    emergencyAlerts: boolean;
+  };
+  quietHours: {
+    enabled: boolean;
+    start: string; // HH:MM format
+    end: string;   // HH:MM format
   };
 }
 

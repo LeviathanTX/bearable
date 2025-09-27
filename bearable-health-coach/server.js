@@ -373,10 +373,10 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  // Get OpenAI API key
-  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  // Get OpenAI API key (server-side only for security)
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error('❌ OpenAI API key not found');
+    console.error('❌ OpenAI API key not found in server environment');
     ws.close(1008, 'API key not configured');
     return;
   }
@@ -417,8 +417,8 @@ app.post('/api/voice/generate', async (req, res) => {
       return res.status(400).json({ error: 'Invalid voice selection' });
     }
 
-    // Get OpenAI API key
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+    // Get OpenAI API key (server-side only for security)
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error('❌ OpenAI API key not found for TTS');
       return res.status(500).json({ error: 'Voice service configuration error' });

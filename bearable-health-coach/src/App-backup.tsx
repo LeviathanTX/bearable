@@ -21,6 +21,10 @@ const mockUser: User = {
   email: 'jane@demo.com',
   avatar: '👩‍💼',
   createdAt: new Date(),
+  contactInfo: {
+    email: 'jane@demo.com',
+    phone: '+1-555-0123'
+  },
   preferences: {
     language: 'en',
     timezone: 'America/New_York',
@@ -33,6 +37,29 @@ const mockUser: User = {
       shareWithCaregivers: true,
       allowDataCollection: true,
       publicProfile: false
+    },
+    nudgingPreferences: {
+      enableNudging: true,
+      channels: {
+        inApp: true,
+        email: true,
+        sms: true,
+        phone: false
+      },
+      frequency: 'moderate',
+      types: {
+        healthReminders: true,
+        goalMotivation: true,
+        protocolAdherence: true,
+        achievements: true,
+        checkIns: true,
+        emergencyAlerts: true
+      },
+      quietHours: {
+        enabled: true,
+        start: '22:00',
+        end: '07:00'
+      }
     }
   },
   healthProfile: {

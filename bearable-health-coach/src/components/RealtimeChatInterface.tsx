@@ -10,6 +10,7 @@ interface RealtimeChatInterfaceProps {
   onConversationUpdate: (conversation: Conversation) => void;
   onCoachSelect?: (coach: AICompanion) => void;
   startWithVoice?: boolean;
+  fallbackComponent?: React.ReactElement;
 }
 
 export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
@@ -19,7 +20,8 @@ export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
   conversation,
   onConversationUpdate,
   onCoachSelect,
-  startWithVoice = false
+  startWithVoice = false,
+  fallbackComponent
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -35,8 +37,8 @@ export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
 
   // Initialize service only once
   if (!realtimeServiceRef.current) {
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY || '';
-    realtimeServiceRef.current = createHealthCoachRealtimeService(apiKey);
+    // API key handled server-side for security - client sends no credentials
+    realtimeServiceRef.current = createHealthCoachRealtimeService('');
   }
 
   const realtimeService = realtimeServiceRef.current;

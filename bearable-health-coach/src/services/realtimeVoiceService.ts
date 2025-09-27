@@ -95,12 +95,15 @@ export class RealtimeVoiceService {
       console.log('🔗 Connecting to OpenAI Realtime API...');
 
       // Use our proxy server to handle WebSocket connection
-      const wsUrl = process.env.NODE_ENV === 'production'
-        ? `wss://bearable-production.up.railway.app/realtime`
-        : `ws://localhost:3002/realtime`;
+      const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = process.env.NODE_ENV === 'production'
+        ? 'bearable-production.up.railway.app'
+        : 'localhost:3003';
+      const wsUrl = `${scheme}://${host}/realtime`;
 
       console.log('🔗 Attempting to connect to:', wsUrl);
       this.ws = new WebSocket(wsUrl);
+      this.ws.binaryType = 'arraybuffer';
 
       this.ws.onopen = () => {
         console.log('✅ WebSocket opened - Connected to proxy server');
@@ -112,18 +115,20 @@ export class RealtimeVoiceService {
 
       this.ws.onmessage = (event) => {
         try {
-          // Check if the data is a Blob (binary audio data)
-          if (event.data instanceof Blob) {
-            console.log('🎵 Received audio data from OpenAI Realtime API');
+          // Check if the data is binary (Blob or ArrayBuffer)
+          if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+            console.log('🎵 Received binary audio data from OpenAI Realtime API');
             this.handleAudioData(event.data);
+          } else if (typeof event.data === 'string') {
+            // Handle JSON text messages
+            console.log('📨 Received text message from server:', event.data.substring(0, 200) + '...');
+            this.handleRealtimeEvent(JSON.parse(event.data));
           } else {
-            // Handle JSON messages
-            const data = typeof event.data === 'string' ? event.data : event.data.toString();
-            console.log('📨 Received message from server:', data.substring(0, 200) + '...');
-            this.handleRealtimeEvent(JSON.parse(data));
+            console.warn('⚠️ Received unknown data type:', typeof event.data, event.data);
           }
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error);
+          console.log('Raw message data type:', typeof event.data);
           console.log('Raw message data:', event.data);
         }
       };
@@ -228,7 +233,7 @@ export class RealtimeVoiceService {
       console.log('🎤 Microphone access granted for Realtime API');
 
       // Create audio worklet for real-time processing
-      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
+      await this.audioContext.audioWorklet.addModule('./audio-processor.js');
       this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'realtime-processor');
 
       // Connect audio pipeline
@@ -435,7 +440,7 @@ export class RealtimeVoiceService {
   // Send event to Realtime API
   private sendEvent(event: RealtimeEvent) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('⚠️ Cannot send event - WebSocket not ready, state:', this.ws?.readyState);
+      console.warn('⚠️ Cannot send event - WebSocket not ready, state:', this.ws?.readyState, 'event:', event.type);
       return;
     }
 
@@ -466,7 +471,9 @@ export class RealtimeVoiceService {
 
   // Send text message (for hybrid text/voice interaction)
   async sendTextMessage(text: string) {
-    if (!this.connected) return;
+    if (!this.connected) {
+      throw new Error('Not connected to Realtime API');
+    }
 
     const messageEvent = {
       type: 'conversation.item.create',
@@ -529,10 +536,10 @@ export class RealtimeVoiceService {
   }
 
   // Handle binary audio data from WebSocket
-  private async handleAudioData(blob: Blob) {
+  private async handleAudioData(data: ArrayBuffer | Blob) {
     try {
-      // Convert blob to array buffer for audio processing
-      const arrayBuffer = await blob.arrayBuffer();
+      // Convert data to array buffer for audio processing
+      const arrayBuffer = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
       const audioData = new Uint8Array(arrayBuffer);
 
       console.log(`🎵 Processing ${audioData.length} bytes of audio data`);

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { User, AICompanion, AppState, Conversation, CoachTeam, CarePlan } from './types';
 import { BearCompanion } from './components/BearCompanion';
 import { ChatInterface } from './components/ChatInterface';
-import { RealtimeChatInterface } from './components/RealtimeChatInterface';
 import { ActivityLog } from './components/ActivityLog';
 import { CaregiverDashboard } from './components/CaregiverDashboard';
 import { HealthGoals } from './components/HealthGoals';
@@ -21,6 +20,10 @@ const mockUser: User = {
   email: 'jane@demo.com',
   avatar: '👩‍💼',
   createdAt: new Date(),
+  contactInfo: {
+    email: 'jane@demo.com',
+    phone: '+1-555-0123'
+  },
   preferences: {
     language: 'en',
     timezone: 'America/New_York',
@@ -33,6 +36,29 @@ const mockUser: User = {
       shareWithCaregivers: true,
       allowDataCollection: true,
       publicProfile: false
+    },
+    nudgingPreferences: {
+      enableNudging: true,
+      channels: {
+        inApp: true,
+        email: true,
+        sms: true,
+        phone: false
+      },
+      frequency: 'moderate',
+      types: {
+        healthReminders: true,
+        goalMotivation: true,
+        protocolAdherence: true,
+        achievements: true,
+        checkIns: true,
+        emergencyAlerts: true
+      },
+      quietHours: {
+        enabled: true,
+        start: '22:00',
+        end: '07:00'
+      }
     }
   },
   healthProfile: {
@@ -62,8 +88,6 @@ function App() {
 
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [startChatWithVoice, setStartChatWithVoice] = useState(false);
-  const [useRealtimeAPI, setUseRealtimeAPI] = useState(true);
 
   useEffect(() => {
     // Simulate loading user data
@@ -93,18 +117,10 @@ function App() {
 
   const handleViewChange = (view: AppState['currentView']) => {
     setAppState(prev => ({ ...prev, currentView: view }));
-    // Reset voice start flag when leaving chat
-    if (view !== 'chat') {
-      setStartChatWithVoice(false);
-    }
   };
 
   const handleCoachSelect = (coach: AICompanion) => {
     setAppState(prev => ({ ...prev, activeCoach: coach }));
-  };
-
-  const handleStartConversation = (coach: AICompanion) => {
-    setAppState(prev => ({ ...prev, activeCoach: coach, currentView: 'chat' }));
   };
 
   const handleCarePlanCreate = (carePlan: CarePlan) => {
@@ -113,6 +129,10 @@ function App() {
 
   const handleCarePlanUpdate = (carePlan: CarePlan) => {
     setAppState(prev => ({ ...prev, currentCarePlan: carePlan }));
+  };
+
+  const handleStartConversation = (coach: AICompanion) => {
+    setAppState(prev => ({ ...prev, activeCoach: coach, currentView: 'chat' }));
   };
 
   if (showWelcome || !appState.currentUser) {
@@ -174,22 +194,6 @@ function App() {
               ))}
             </div>
 
-            {/* Realtime API Toggle */}
-            {appState.currentView === 'chat' && (
-              <div className="flex items-center space-x-3 py-2">
-                <span className="text-sm text-slate-600">Voice Mode:</span>
-                <button
-                  onClick={() => setUseRealtimeAPI(!useRealtimeAPI)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                    useRealtimeAPI
-                      ? 'bg-gradient-to-r from-green-400 to-blue-500 text-white shadow-lg'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                  }`}
-                >
-                  {useRealtimeAPI ? '🚀 Realtime AI' : '🎙️ Basic Voice'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </nav>
@@ -231,27 +235,15 @@ function App() {
         )}
 
         {appState.currentView === 'chat' && appState.activeCoach && appState.currentUser && (
-          useRealtimeAPI ? (
-            <RealtimeChatInterface
-              user={appState.currentUser}
-              companion={appState.activeCoach}
-              coachTeam={appState.coachTeam || undefined}
-              conversation={currentConversation}
-              onConversationUpdate={setCurrentConversation}
-              onCoachSelect={handleCoachSelect}
-              startWithVoice={startChatWithVoice}
-            />
-          ) : (
-            <ChatInterface
-              user={appState.currentUser}
-              companion={appState.activeCoach}
-              coachTeam={appState.coachTeam || undefined}
-              conversation={currentConversation}
-              onConversationUpdate={setCurrentConversation}
-              onCoachSelect={handleCoachSelect}
-              startWithVoice={startChatWithVoice}
-            />
-          )
+          <ChatInterface
+            user={appState.currentUser}
+            companion={appState.activeCoach}
+            coachTeam={appState.coachTeam || undefined}
+            conversation={currentConversation}
+            onConversationUpdate={setCurrentConversation}
+            onCoachSelect={handleCoachSelect}
+            startWithVoice={true}
+          />
         )}
 
         {appState.currentView === 'coaches' && appState.currentUser && (

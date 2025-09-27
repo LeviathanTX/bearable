@@ -1,150 +1,106 @@
-// Audio Worklet Processor for OpenAI Realtime API
-// Handles real-time audio processing with Voice Activity Detection
+// AudioWorklet processor for Realtime API
+// Handles real-time audio processing, resampling, and voice activity detection
 
 class RealtimeProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
 
-    // Audio processing state
-    this.bufferSize = 128; // Small buffer for low latency
-    this.audioBuffer = [];
-    this.sampleRate = 24000; // OpenAI Realtime preferred sample rate
+    // Audio buffer for resampling
+    this.inputBuffer = [];
+    this.targetSampleRate = 24000; // OpenAI Realtime prefers 24kHz
+    this.inputSampleRate = sampleRate; // Current audio context sample rate
+    this.resampleRatio = this.targetSampleRate / this.inputSampleRate;
 
     // Voice Activity Detection
-    this.vadThreshold = 0.01; // Adjust based on environment
+    this.vadThreshold = 0.01;
     this.vadSmoothingFactor = 0.95;
-    this.vadSmoothedEnergy = 0;
-    this.vadConsecutiveSpeech = 0;
-    this.vadConsecutiveSilence = 0;
-    this.vadMinSpeechFrames = 3;
-    this.vadMinSilenceFrames = 10;
+    this.currentEnergy = 0;
     this.isSpeaking = false;
+    this.silenceFrames = 0;
+    this.requiredSilenceFrames = Math.floor(this.targetSampleRate * 0.5 / 128); // 0.5 seconds
 
-    // Audio quality enhancement
-    this.dcBlockerX = 0;
-    this.dcBlockerY = 0;
-    this.dcBlockerAlpha = 0.995;
-
-    console.log('🎙️ Realtime Audio Processor initialized');
+    console.log(`🎵 RealtimeProcessor initialized: ${this.inputSampleRate}Hz → ${this.targetSampleRate}Hz (ratio: ${this.resampleRatio})`);
   }
 
   process(inputs, outputs, parameters) {
     const input = inputs[0];
 
-    if (!input || input.length === 0) {
-      return true;
+    if (!input || !input[0]) {
+      return true; // Keep processor alive
     }
 
-    const inputChannel = input[0]; // Mono input
+    const inputData = input[0]; // First channel
 
-    if (inputChannel && inputChannel.length > 0) {
-      // Process audio with enhancements
-      const processedAudio = this.processAudioData(inputChannel);
+    // Calculate energy for Voice Activity Detection
+    const energy = this.calculateEnergy(inputData);
+    this.currentEnergy = this.vadSmoothingFactor * this.currentEnergy + (1 - this.vadSmoothingFactor) * energy;
 
-      // Voice Activity Detection
-      const vadResult = this.detectVoiceActivity(processedAudio);
+    // Voice Activity Detection
+    const wasSpeaking = this.isSpeaking;
+    this.isSpeaking = this.currentEnergy > this.vadThreshold;
 
-      // Send processed audio data
+    if (this.isSpeaking) {
+      this.silenceFrames = 0;
+    } else {
+      this.silenceFrames++;
+    }
+
+    // Send VAD updates
+    if (wasSpeaking !== this.isSpeaking) {
       this.port.postMessage({
-        type: 'audio',
-        data: processedAudio
+        type: 'vad',
+        data: {
+          isSpeaking: this.isSpeaking,
+          energy: this.currentEnergy
+        }
       });
+    }
 
-      // Send VAD results
-      if (vadResult.statusChanged) {
+    // Resample audio to target sample rate (24kHz for OpenAI)
+    const resampledData = this.resample(inputData);
+
+    if (resampledData.length > 0) {
+      // Send audio data when speaking or recently speaking
+      if (this.isSpeaking || this.silenceFrames < this.requiredSilenceFrames) {
         this.port.postMessage({
-          type: 'vad',
-          data: {
-            isSpeaking: vadResult.isSpeaking,
-            energy: vadResult.energy,
-            confidence: vadResult.confidence
-          }
+          type: 'audio',
+          data: resampledData
         });
       }
     }
 
-    return true;
+    return true; // Keep processor alive
   }
 
-  // Process audio data with quality enhancements
-  processAudioData(inputData) {
-    const processedData = new Float32Array(inputData.length);
-
-    for (let i = 0; i < inputData.length; i++) {
-      let sample = inputData[i];
-
-      // DC blocker (high-pass filter to remove DC offset)
-      this.dcBlockerY = sample - this.dcBlockerX + this.dcBlockerAlpha * this.dcBlockerY;
-      this.dcBlockerX = sample;
-      sample = this.dcBlockerY;
-
-      // Soft limiter to prevent clipping
-      if (sample > 0.95) {
-        sample = 0.95;
-      } else if (sample < -0.95) {
-        sample = -0.95;
-      }
-
-      processedData[i] = sample;
-    }
-
-    return processedData;
-  }
-
-  // Voice Activity Detection algorithm
-  detectVoiceActivity(audioData) {
-    // Calculate RMS energy
-    let energy = 0;
+  calculateEnergy(audioData) {
+    let sum = 0;
     for (let i = 0; i < audioData.length; i++) {
-      energy += audioData[i] * audioData[i];
+      sum += audioData[i] * audioData[i];
     }
-    energy = Math.sqrt(energy / audioData.length);
-
-    // Smooth the energy
-    this.vadSmoothedEnergy =
-      this.vadSmoothingFactor * this.vadSmoothedEnergy +
-      (1 - this.vadSmoothingFactor) * energy;
-
-    // Current frame speech detection
-    const currentFrameHasSpeech = this.vadSmoothedEnergy > this.vadThreshold;
-
-    let statusChanged = false;
-    let confidence = Math.min(this.vadSmoothedEnergy / this.vadThreshold, 2.0);
-
-    if (currentFrameHasSpeech) {
-      this.vadConsecutiveSpeech++;
-      this.vadConsecutiveSilence = 0;
-
-      // Start speaking if we have enough consecutive speech frames
-      if (!this.isSpeaking && this.vadConsecutiveSpeech >= this.vadMinSpeechFrames) {
-        this.isSpeaking = true;
-        statusChanged = true;
-        console.log('🗣️ Speech detected (energy:', this.vadSmoothedEnergy.toFixed(4), ')');
-      }
-    } else {
-      this.vadConsecutiveSilence++;
-      this.vadConsecutiveSpeech = 0;
-
-      // Stop speaking if we have enough consecutive silence frames
-      if (this.isSpeaking && this.vadConsecutiveSilence >= this.vadMinSilenceFrames) {
-        this.isSpeaking = false;
-        statusChanged = true;
-        console.log('🤐 Speech ended (silence frames:', this.vadConsecutiveSilence, ')');
-      }
-    }
-
-    return {
-      isSpeaking: this.isSpeaking,
-      energy: this.vadSmoothedEnergy,
-      confidence: confidence,
-      statusChanged: statusChanged
-    };
+    return Math.sqrt(sum / audioData.length);
   }
 
-  // Adaptive threshold adjustment
-  adaptThreshold(backgroundNoise) {
-    // Adjust VAD threshold based on background noise
-    this.vadThreshold = Math.max(0.005, backgroundNoise * 2.5);
+  resample(inputData) {
+    // Simple linear interpolation resampling
+    if (Math.abs(this.resampleRatio - 1.0) < 0.001) {
+      // No resampling needed
+      return new Float32Array(inputData);
+    }
+
+    const outputLength = Math.floor(inputData.length * this.resampleRatio);
+    const output = new Float32Array(outputLength);
+
+    for (let i = 0; i < outputLength; i++) {
+      const srcIndex = i / this.resampleRatio;
+      const srcIndexFloor = Math.floor(srcIndex);
+      const srcIndexCeil = Math.min(srcIndexFloor + 1, inputData.length - 1);
+      const fraction = srcIndex - srcIndexFloor;
+
+      // Linear interpolation
+      output[i] = inputData[srcIndexFloor] * (1 - fraction) + inputData[srcIndexCeil] * fraction;
+    }
+
+    return output;
   }
 }
 

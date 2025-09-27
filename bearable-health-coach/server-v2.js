@@ -367,14 +367,16 @@ wss.on('connection', (ws, req) => {
   const connectionsFromIP = Array.from(activeConnections.values())
     .filter(conn => conn.clientIP === clientIP).length;
 
-  if (connectionsFromIP >= 3) {
-    console.warn(`⚠️ Too many connections from ${clientIP}`);
+  // Allow more connections in development for testing
+  const maxConnections = process.env.NODE_ENV === 'production' ? 3 : 10;
+  if (connectionsFromIP >= maxConnections) {
+    console.warn(`⚠️ Too many connections from ${clientIP} (${connectionsFromIP}/${maxConnections})`);
     ws.close(1008, 'Too many connections from this IP');
     return;
   }
 
-  // Get OpenAI API key
-  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  // Get OpenAI API key (server-side only for security)
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error('❌ OpenAI API key not found');
     ws.close(1008, 'API key not configured');
@@ -418,7 +420,7 @@ app.post('/api/voice/generate', async (req, res) => {
     }
 
     // Get OpenAI API key
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error('❌ OpenAI API key not found for TTS');
       return res.status(500).json({ error: 'Voice service configuration error' });
@@ -538,5 +540,5 @@ server.listen(PORT, () => {
   console.log(`🎤 Enhanced Voice API server running on port ${PORT}`);
   console.log(`🔗 Realtime API proxy available at ws://localhost:${PORT}/realtime`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ OpenAI API key configured: ${process.env.REACT_APP_OPENAI_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`✅ OpenAI API key configured: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
 });
