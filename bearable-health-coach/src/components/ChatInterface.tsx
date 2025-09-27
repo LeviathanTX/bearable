@@ -1,22 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AICompanion, User, Conversation, Message } from '../types';
+import { AICompanion, User, Conversation, Message, CoachTeam } from '../types';
 import { AIService } from '../services/aiService';
 import { VoiceService } from '../services/voiceService';
-import { VoiceSettingsComponent } from './VoiceSettings';
+import { VoiceSettingsComponent, VoiceSettings } from './VoiceSettings';
 
 interface ChatInterfaceProps {
   user: User;
   companion: AICompanion;
+  coachTeam?: CoachTeam;
   conversation: Conversation | null;
   onConversationUpdate: (conversation: Conversation) => void;
+  onCoachSelect?: (coach: AICompanion) => void;
   startWithVoice?: boolean;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   user,
   companion,
+  coachTeam,
   conversation,
   onConversationUpdate,
+  onCoachSelect,
   startWithVoice = false
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -298,6 +302,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <h2 className="text-lg font-semibold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">{companion.name}</h2>
             <p className="text-sm text-slate-500">Mayo Clinic Lifestyle Medicine AI</p>
           </div>
+
+          {/* Coach Team Selector */}
+          {coachTeam && (
+            <div className="ml-6">
+              <label className="block text-xs text-slate-500 mb-1">Active Coach Team</label>
+              <select
+                value={companion.id}
+                onChange={(e) => {
+                  const allCoaches = [coachTeam.primaryCoach, ...Object.values(coachTeam.specialists)];
+                  const selectedCoach = allCoaches.find((coach: any) => coach.id === e.target.value);
+                  if (selectedCoach && onCoachSelect) {
+                    onCoachSelect(selectedCoach);
+                  }
+                }}
+                className="text-sm bg-white/90 border border-slate-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              >
+                <option key={coachTeam.primaryCoach.id} value={coachTeam.primaryCoach.id}>
+                  {coachTeam.primaryCoach.avatar} {coachTeam.primaryCoach.name} (Primary)
+                </option>
+                {Object.values(coachTeam.specialists).map((coach: any) => (
+                  <option key={coach.id} value={coach.id}>
+                    {coach.avatar} {coach.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-4">
           <button
@@ -596,7 +627,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <VoiceSettingsComponent
           isOpen={showVoiceSelector}
           onClose={() => setShowVoiceSelector(false)}
-          onSettingsChange={(settings) => {
+          onSettingsChange={(settings: VoiceSettings) => {
             console.log('Voice settings updated:', settings);
             // Apply voice settings to the voice service
             // TODO: Integrate with voice service to apply settings

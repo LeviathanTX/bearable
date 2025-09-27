@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-interface VoiceSettingsProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSettingsChange: (settings: VoiceSettings) => void;
-}
-
 export interface VoiceSettings {
   voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   speed: number;
@@ -13,6 +7,12 @@ export interface VoiceSettings {
   micSensitivity: number;
   pushToTalk: boolean;
   autoResponse: boolean;
+}
+
+interface VoiceSettingsProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSettingsChange: (settings: VoiceSettings) => void;
 }
 
 export const VoiceSettingsComponent: React.FC<VoiceSettingsProps> = ({

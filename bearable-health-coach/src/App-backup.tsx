@@ -48,6 +48,8 @@ const mockUser: User = {
   }
 };
 
+// The coach team will be dynamically created based on the user
+
 function App() {
   const [appState, setAppState] = useState<AppState>({
     currentUser: null,
@@ -63,7 +65,7 @@ function App() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [startChatWithVoice, setStartChatWithVoice] = useState(false);
-  const [useRealtimeAPI, setUseRealtimeAPI] = useState(true);
+  const [useRealtimeAPI, setUseRealtimeAPI] = useState(true); // Enable Realtime API by default
 
   useEffect(() => {
     // Simulate loading user data

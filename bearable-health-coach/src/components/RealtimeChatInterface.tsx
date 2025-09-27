@@ -1,20 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AICompanion, User, Conversation, Message } from '../types';
+import { AICompanion, User, Conversation, Message, CoachTeam } from '../types';
 import { createHealthCoachRealtimeService, RealtimeVoiceService } from '../services/realtimeVoiceService';
 
 interface RealtimeChatInterfaceProps {
   user: User;
   companion: AICompanion;
+  coachTeam?: CoachTeam;
   conversation: Conversation | null;
   onConversationUpdate: (conversation: Conversation) => void;
+  onCoachSelect?: (coach: AICompanion) => void;
   startWithVoice?: boolean;
 }
 
 export const RealtimeChatInterface: React.FC<RealtimeChatInterfaceProps> = ({
   user,
   companion,
+  coachTeam,
   conversation,
   onConversationUpdate,
+  onCoachSelect,
   startWithVoice = false
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);

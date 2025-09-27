@@ -331,7 +331,7 @@ export interface AppState {
   coachTeam: CoachTeam | null;
   activeCoach: AICompanion | null; // Currently active coach in conversation
   currentCarePlan: CarePlan | null;
-  currentView: 'dashboard' | 'chat' | 'goals' | 'activity' | 'caregivers' | 'care_plan' | 'settings';
+  currentView: 'dashboard' | 'chat' | 'coaches' | 'goals' | 'activity' | 'caregivers' | 'care_plan' | 'settings';
   isLoading: boolean;
   error: string | null;
   pendingEscalations: EscalationTrigger[];
@@ -413,4 +413,334 @@ export interface ProactiveInsight {
   priority: 'low' | 'medium' | 'high';
   createdAt: Date;
   isActedUpon: boolean;
+}
+
+// === CUSTOM COACH CREATION PLATFORM TYPES ===
+
+export interface CustomCoach extends AICompanion {
+  // Extended fields for custom coaches
+  isCustom: true;
+  createdBy: string; // User ID who created this coach
+  description: string;
+  template?: CoachTemplate;
+  systemPrompt: string;
+  voiceSettings: CoachVoiceSettings;
+  healthSpecializations: HealthSpecialization[];
+  mayoProtocols: MayoProtocol[];
+  behaviorSettings: CoachBehaviorSettings;
+  coachingStyle: CoachingStyle;
+  patientInteractionHistory: PatientInteraction[];
+  effectivenessMetrics: EffectivenessMetrics;
+  approvalStatus: 'draft' | 'pending_review' | 'approved' | 'rejected';
+  sharedWith: CoachSharingSettings;
+  version: number;
+  lastOptimized: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CoachTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: HealthConditionCategory;
+  targetConditions: string[];
+  basePersonality: AICompanion['personality'];
+  systemPromptTemplate: string;
+  recommendedSpecializations: HealthSpecialization[];
+  defaultVoiceSettings: CoachVoiceSettings;
+  mayoProtocolIds: string[];
+  tags: string[];
+  difficultyLevel: 'beginner' | 'intermediate' | 'advanced';
+  estimatedSetupTime: number; // minutes
+  popularity: number;
+  rating: number;
+  createdBy: 'system' | 'community' | string; // User ID
+  isVerified: boolean;
+  lastUpdated: Date;
+}
+
+export type HealthConditionCategory =
+  | 'diabetes'
+  | 'cardiovascular'
+  | 'mental_health'
+  | 'chronic_pain'
+  | 'cancer_care'
+  | 'weight_management'
+  | 'substance_recovery'
+  | 'respiratory'
+  | 'autoimmune'
+  | 'aging_wellness'
+  | 'pediatric'
+  | 'womens_health'
+  | 'mens_health'
+  | 'general_wellness';
+
+export interface HealthSpecialization {
+  id: string;
+  name: string;
+  category: HealthConditionCategory;
+  description: string;
+  requiredKnowledge: string[];
+  certificationLevel: 'basic' | 'intermediate' | 'expert';
+  evidenceBase: 'research_proven' | 'clinical_guidelines' | 'expert_consensus';
+  lastReviewed: Date;
+}
+
+export interface CoachVoiceSettings {
+  provider: 'openai' | 'elevenlabs' | 'azure' | 'google';
+  voiceId: string;
+  voiceName: string;
+  gender: 'male' | 'female' | 'neutral';
+  accent: string;
+  speed: number; // 0.5 - 2.0
+  pitch: number; // 0.5 - 2.0
+  stability: number; // 0.0 - 1.0 (ElevenLabs specific)
+  clarityAndSimilarity: number; // 0.0 - 1.0 (ElevenLabs specific)
+  emotionalRange: 'minimal' | 'moderate' | 'expressive';
+  customization: {
+    warmth: number; // 0-10
+    authority: number; // 0-10
+    empathy: number; // 0-10
+    energy: number; // 0-10
+  };
+}
+
+export interface CoachBehaviorSettings {
+  responseStyle: 'concise' | 'detailed' | 'conversational' | 'clinical';
+  encouragementLevel: 'subtle' | 'moderate' | 'high' | 'enthusiastic';
+  challengeLevel: 'gentle' | 'moderate' | 'assertive' | 'direct';
+  personalizationDepth: 'basic' | 'moderate' | 'deep' | 'comprehensive';
+  memoryRetention: 'session' | 'short_term' | 'long_term' | 'permanent';
+  escalationSensitivity: 'low' | 'medium' | 'high' | 'very_high';
+  culturalAdaptation: boolean;
+  languageComplexity: 'simple' | 'standard' | 'advanced' | 'medical';
+  humorAppropriate: boolean;
+  motivationalApproach: 'intrinsic' | 'extrinsic' | 'mixed' | 'adaptive';
+}
+
+export type CoachingStyle =
+  | 'supportive_companion'
+  | 'expert_advisor'
+  | 'motivational_coach'
+  | 'clinical_specialist'
+  | 'lifestyle_mentor'
+  | 'behavioral_therapist'
+  | 'wellness_educator'
+  | 'recovery_advocate';
+
+export interface MayoProtocol {
+  id: string;
+  title: string;
+  category: HealthConditionCategory;
+  description: string;
+  clinicalGuidelines: string[];
+  evidenceLevel: 'A' | 'B' | 'C' | 'D';
+  lastReviewed: Date;
+  applicableConditions: string[];
+  contraindicationsnd: string[];
+  implementationSteps: ProtocolStep[];
+  monitoringCriteria: MonitoringCriterion[];
+  outcomeMetrics: string[];
+  isActive: boolean;
+}
+
+export interface ProtocolStep {
+  id: string;
+  title: string;
+  description: string;
+  pillar: LifestylePillar;
+  timeframe: string;
+  priority: 'critical' | 'important' | 'beneficial' | 'optional';
+  prerequisites: string[];
+  expectedOutcomes: string[];
+  patientInstructions: string;
+  providerNotes: string;
+}
+
+export interface MonitoringCriterion {
+  id: string;
+  metric: string;
+  target: {
+    value: number;
+    unit: string;
+    operator: '<' | '>' | '=' | '≤' | '≥' | 'range';
+  };
+  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
+  alertThresholds: {
+    warning: number;
+    critical: number;
+  };
+  dataSource: 'patient_reported' | 'wearable' | 'clinical' | 'lab_result';
+}
+
+export interface PatientInteraction {
+  id: string;
+  coachId: string;
+  userId: string;
+  sessionId: string;
+  timestamp: Date;
+  duration: number; // seconds
+  interactionType: 'conversation' | 'goal_setting' | 'progress_review' | 'crisis_support';
+  topicsDiscussed: string[];
+  emotionalState: {
+    detected: string;
+    confidence: number;
+  };
+  effectiveness: {
+    userRating: number; // 1-5
+    engagementScore: number; // 0-100
+    goalProgress: number; // 0-100
+  };
+  outcomeCategories: InteractionOutcome[];
+  followUpRequired: boolean;
+  escalationTriggered: boolean;
+}
+
+export type InteractionOutcome =
+  | 'goal_achieved'
+  | 'progress_made'
+  | 'maintained_status'
+  | 'declined_progress'
+  | 'crisis_averted'
+  | 'escalation_needed'
+  | 'education_provided'
+  | 'motivation_enhanced';
+
+export interface EffectivenessMetrics {
+  totalInteractions: number;
+  averageRating: number;
+  engagementScore: number; // 0-100
+  goalAchievementRate: number; // 0-100
+  patientRetentionRate: number; // 0-100
+  crisisPreventionCount: number;
+  positiveOutcomePercentage: number;
+  recommendationAcceptanceRate: number;
+  lastCalculated: Date;
+  trendAnalysis: {
+    improving: boolean;
+    stagnant: boolean;
+    declining: boolean;
+    trend: number; // -1 to 1
+  };
+}
+
+export interface CoachSharingSettings {
+  isPublic: boolean;
+  shareWithCaregivers: boolean;
+  shareWithHealthcareProviders: boolean;
+  allowCommunityAccess: boolean;
+  sharedWithUsers: string[]; // User IDs
+  permissionLevel: 'view_only' | 'can_modify' | 'full_access';
+  shareAnalytics: boolean;
+  anonymizeData: boolean;
+}
+
+// Coach Management Dashboard Types
+export interface CoachDashboardFilter {
+  categories: HealthConditionCategory[];
+  specializations: string[];
+  effectivenessRange: [number, number];
+  createdDateRange: [Date, Date];
+  approvalStatus: CustomCoach['approvalStatus'][];
+  isCustom: boolean | null;
+  searchQuery: string;
+}
+
+export interface CoachBulkOperation {
+  type: 'delete' | 'duplicate' | 'export' | 'archive' | 'approve' | 'reject';
+  coachIds: string[];
+  parameters?: any;
+}
+
+export interface CoachAnalytics {
+  coachId: string;
+  timeframe: 'day' | 'week' | 'month' | 'quarter' | 'year';
+  metrics: {
+    totalInteractions: number;
+    uniqueUsers: number;
+    averageSessionDuration: number;
+    satisfactionScore: number;
+    goalCompletionRate: number;
+    retentionRate: number;
+    escalationRate: number;
+  };
+  trends: {
+    interactionTrend: number[];
+    satisfactionTrend: number[];
+    performanceTrend: number[];
+  };
+  comparisons: {
+    versusBaseline: number;
+    versusCategory: number;
+    rankInCategory: number;
+  };
+}
+
+// AI Optimization Types
+export interface CoachOptimization {
+  id: string;
+  coachId: string;
+  optimizationType: 'personality' | 'voice' | 'behavior' | 'protocols' | 'comprehensive';
+  triggeredBy: 'performance_decline' | 'user_feedback' | 'scheduled' | 'manual';
+  analysisData: {
+    performanceMetrics: EffectivenessMetrics;
+    userFeedbackSummary: string;
+    interactionPatterns: any;
+    identifiedIssues: string[];
+  };
+  recommendations: OptimizationRecommendation[];
+  implementedChanges: CoachChange[];
+  expectedImprovement: number; // 0-100
+  actualImprovement?: number; // 0-100 (after implementation)
+  status: 'analyzing' | 'recommendations_ready' | 'implementing' | 'testing' | 'completed' | 'failed';
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface OptimizationRecommendation {
+  id: string;
+  category: 'personality' | 'voice' | 'behavior' | 'protocol' | 'specialization';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  expectedImpact: number; // 0-100
+  confidence: number; // 0-100
+  implementationComplexity: 'simple' | 'moderate' | 'complex';
+  suggestedChanges: any;
+  reasoning: string;
+  evidenceBase: string[];
+}
+
+export interface CoachChange {
+  id: string;
+  timestamp: Date;
+  changeType: 'personality_adjustment' | 'voice_modification' | 'behavior_update' | 'protocol_change' | 'specialization_add';
+  description: string;
+  oldValue: any;
+  newValue: any;
+  changeBy: 'ai_optimization' | 'user_manual' | 'system_update';
+  isReverted: boolean;
+  effectivenessImpact?: number;
+}
+
+// Database Schema Types for Supabase
+export interface DatabaseTables {
+  coaches: CustomCoach;
+  coach_templates: CoachTemplate;
+  health_specializations: HealthSpecialization;
+  mayo_protocols: MayoProtocol;
+  patient_interactions: PatientInteraction;
+  coach_optimizations: CoachOptimization;
+  conversation_sessions: {
+    id: string;
+    coach_id: string;
+    user_id: string;
+    started_at: Date;
+    ended_at?: Date;
+    duration_seconds?: number;
+    message_count: number;
+    satisfaction_rating?: number;
+    goal_progress?: number;
+    escalation_triggered: boolean;
+  };
 }
