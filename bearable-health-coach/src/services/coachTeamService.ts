@@ -74,6 +74,43 @@ export class CoachTeamService {
       role: 'pillar_specialist',
       credentials: ['Addiction Medicine Specialist', 'Mayo Clinic Addiction Services'],
       mayoClinicProtocols: ['Smoking cessation program', 'Alcohol use disorder treatment', 'Opioid recovery support']
+    },
+    // Additional aliases for lifestyle pillars
+    movement: {
+      id: 'movement-specialist',
+      name: 'Dr. Active Motion',
+      personality: 'coach',
+      expertise: ['Exercise physiology', 'Movement therapy', 'Injury prevention', 'Fitness programming'],
+      avatar: '🏃‍♂️',
+      isActive: true,
+      specialization: 'movement',
+      role: 'pillar_specialist',
+      credentials: ['Exercise Physiologist', 'Mayo Clinic Movement Medicine'],
+      mayoClinicProtocols: ['Progressive exercise programming', 'Movement assessment protocols', 'Injury prevention guidelines']
+    },
+    nutrition: {
+      id: 'nutrition-specialist-alt',
+      name: 'Dr. Nutritional Health',
+      personality: 'supportive',
+      expertise: ['Clinical nutrition', 'Dietary planning', 'Nutritional counseling', 'Weight management'],
+      avatar: '🥗',
+      isActive: true,
+      specialization: 'nutrition',
+      role: 'pillar_specialist',
+      credentials: ['Registered Dietitian', 'Mayo Clinic Nutrition Services'],
+      mayoClinicProtocols: ['Nutritional assessment', 'Meal planning protocols', 'Weight management guidelines']
+    },
+    sleep: {
+      id: 'sleep-specialist-alt',
+      name: 'Dr. Restful Sleep',
+      personality: 'supportive',
+      expertise: ['Sleep medicine', 'Sleep hygiene', 'Circadian rhythm optimization', 'Sleep disorders'],
+      avatar: '😴',
+      isActive: true,
+      specialization: 'sleep',
+      role: 'pillar_specialist',
+      credentials: ['Sleep Medicine Specialist', 'Mayo Clinic Sleep Center'],
+      mayoClinicProtocols: ['Sleep study protocols', 'Circadian rhythm optimization', 'Sleep hygiene guidelines']
     }
   };
 

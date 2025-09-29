@@ -317,6 +317,73 @@ export class CarePlanService {
           description: 'Sustain healthy relationship with substances',
           target: 'Maintain healthy substance use patterns with strong coping strategies'
         }
+      },
+      // Additional aliases for lifestyle pillars
+      movement: {
+        foundation: {
+          title: 'Movement Assessment',
+          description: 'Evaluate current physical activity and movement patterns',
+          target: 'Track daily movement for 7 days and identify baseline activity level'
+        },
+        initiation: {
+          title: 'Daily Movement Practice',
+          description: 'Begin incorporating regular movement into daily routine',
+          target: 'Complete 30 minutes of movement daily'
+        },
+        optimization: {
+          title: 'Structured Exercise Program',
+          description: 'Develop comprehensive fitness routine',
+          target: 'Follow structured exercise program 5 days per week'
+        },
+        maintenance: {
+          title: 'Lifelong Movement Habits',
+          description: 'Sustain active lifestyle and movement practice',
+          target: 'Maintain consistent movement routine with variety and progression'
+        }
+      },
+      nutrition: {
+        foundation: {
+          title: 'Nutrition Assessment',
+          description: 'Evaluate current eating patterns and nutritional intake',
+          target: 'Complete comprehensive nutrition assessment and food diary'
+        },
+        initiation: {
+          title: 'Healthy Eating Habits',
+          description: 'Begin implementing healthy eating patterns',
+          target: 'Plan and prepare 80% of meals using whole foods'
+        },
+        optimization: {
+          title: 'Nutritional Excellence',
+          description: 'Optimize nutrition for health and energy',
+          target: 'Achieve balanced macronutrient intake and meet all micronutrient needs'
+        },
+        maintenance: {
+          title: 'Sustainable Nutrition',
+          description: 'Maintain optimal eating patterns long-term',
+          target: 'Sustain healthy eating habits with flexibility and enjoyment'
+        }
+      },
+      sleep: {
+        foundation: {
+          title: 'Sleep Assessment',
+          description: 'Evaluate current sleep patterns and quality',
+          target: 'Track sleep for 14 days and identify improvement opportunities'
+        },
+        initiation: {
+          title: 'Sleep Hygiene',
+          description: 'Establish consistent sleep routine and environment',
+          target: 'Achieve 7-8 hours of quality sleep nightly'
+        },
+        optimization: {
+          title: 'Sleep Optimization',
+          description: 'Fine-tune sleep schedule and recovery',
+          target: 'Optimize sleep timing and environment for maximum recovery'
+        },
+        maintenance: {
+          title: 'Sleep Mastery',
+          description: 'Maintain excellent sleep patterns consistently',
+          target: 'Sustain optimal sleep quality and duration long-term'
+        }
       }
     };
 

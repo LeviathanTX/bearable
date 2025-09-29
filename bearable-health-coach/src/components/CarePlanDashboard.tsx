@@ -64,7 +64,10 @@ export const CarePlanDashboard: React.FC<CarePlanDashboardProps> = ({
       stress_management: '🧘‍♀️',
       restorative_sleep: '😴',
       connectedness: '🤝',
-      substance_avoidance: '🚭'
+      substance_avoidance: '🚭',
+      movement: '🏃‍♂️',
+      nutrition: '🥗',
+      sleep: '😴'
     };
     return icons[pillar] || '🎯';
   };

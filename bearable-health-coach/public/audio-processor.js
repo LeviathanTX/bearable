@@ -8,7 +8,7 @@ class RealtimeProcessor extends AudioWorkletProcessor {
     // Audio buffer for resampling
     this.inputBuffer = [];
     this.targetSampleRate = 24000; // OpenAI Realtime prefers 24kHz
-    this.inputSampleRate = sampleRate; // Current audio context sample rate
+    this.inputSampleRate = globalThis.sampleRate || 48000; // Current audio context sample rate
     this.resampleRatio = this.targetSampleRate / this.inputSampleRate;
 
     // Voice Activity Detection

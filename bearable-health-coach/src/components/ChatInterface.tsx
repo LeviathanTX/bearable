@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AICompanion, User, Conversation, Message, CoachTeam } from '../types';
 import { AIService } from '../services/aiService';
-import { VoiceService } from '../services/voiceService';
-import { VoiceSettingsComponent, VoiceSettings } from './VoiceSettings';
+import { voiceService } from '../services/elevenLabsVoiceService';
+import { speechRecognitionService } from '../services/speechRecognitionService';
+import { ElevenLabsVoiceSettings } from './ElevenLabsVoiceSettings';
 
 interface ChatInterfaceProps {
   user: User;
@@ -33,7 +34,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isVoiceInput, setIsVoiceInput] = useState(false);
   const [hasAutoStartedVoice, setHasAutoStartedVoice] = useState(false);
   const [aiService] = useState(() => new AIService());
-  const [voiceService] = useState(() => new VoiceService());
+  // Using singleton ElevenLabs voice service and speech recognition
   // const [premiumVoiceService] = useState(() => new PremiumVoiceService());
   const [showVoiceSelector, setShowVoiceSelector] = useState(false);
   // const [selectedVoiceCharacter, setSelectedVoiceCharacter] = useState(PremiumVoiceService.WELLNESS_BEAR);
@@ -44,7 +45,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     try {
       // If currently listening, stop listening
       if (isListening) {
-        voiceService.stopListening();
+        speechRecognitionService.stopListening();
         setIsListening(false);
         setVoiceTranscript('');
         return;
@@ -62,15 +63,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         return;
       }
 
-      setIsListening(true);
-      setVoiceTranscript('');
-
-      await voiceService.startHealthConversation(
-        (transcript, isFinal) => {
-          console.log('Voice transcript:', transcript, 'Final:', isFinal);
+      const success = speechRecognitionService.startListening(
+        (transcript, isInterim) => {
+          console.log('Voice transcript:', transcript, 'Interim:', isInterim);
           setVoiceTranscript(transcript);
 
-          if (isFinal && transcript.trim()) {
+          if (!isInterim && transcript.trim()) {
             // Set the message and stop listening
             const finalMessage = transcript.trim();
             setIsListening(false);
@@ -79,6 +77,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             setIsVoiceInput(true);
             setInputMessage(finalMessage);
           }
+        },
+        () => {
+          setIsListening(false);
+          setVoiceTranscript('');
         },
         (error) => {
           console.error('Voice input error:', error);
@@ -89,6 +91,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           alert('Voice recognition error. Please try again or type your message.');
         }
       );
+
+      if (success) {
+        setIsListening(true);
+        setVoiceTranscript('');
+      }
     } catch (error) {
       console.error('Voice service error:', error);
       setIsListening(false);
@@ -101,16 +108,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSpeakResponse = async (message: string) => {
     try {
       if (isSpeaking) {
-        // Stop current voice (works for both services)
+        // Stop current voice
         voiceService.stopSpeaking();
-        // premiumVoiceService.stopCurrentAudio();
         setIsSpeaking(false);
         return;
       }
 
       // Stop any ongoing voice input when AI starts speaking
       if (isListening) {
-        voiceService.stopListening();
+        speechRecognitionService.stopListening();
         setIsListening(false);
         setVoiceTranscript('');
       }
@@ -118,13 +124,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setIsSpeaking(true);
 
       try {
-        // TEMPORARY: Skip premium voice due to quota issues, use browser voice directly
-        console.log('🔊 Using browser voice (OpenAI quota exceeded)');
-        await voiceService.speakHealthTip(message);
-        console.log('✅ Browser voice playback completed');
+        console.log('🔊 Using ElevenLabs voice');
+        await voiceService.speakText(message);
+        console.log('✅ ElevenLabs voice playback completed');
       } catch (voiceError) {
-        console.error('Browser voice also failed:', voiceError);
-        // If browser voice fails too, there's a deeper issue
+        console.error('ElevenLabs voice failed:', voiceError);
         throw voiceError;
       }
 
@@ -160,13 +164,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages([welcomeMessage]);
     }
 
-    // Debug: Log current voice information
-    if (voiceService.isSpeechSynthesisSupported()) {
-      const voiceInfo = voiceService.getCurrentVoiceInfo();
-      if (voiceInfo) {
-        console.log('Using voice:', voiceInfo);
-      }
-    }
+    // Debug: Voice service is available
+    console.log('🎤 ElevenLabs voice service ready');
   }, [user.name, voiceService, messages.length]);
 
   // Auto-start voice if requested (but only once)
@@ -378,7 +377,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       onClick={() => {
                         if (isSpeaking) {
                           voiceService.stopSpeaking();
-                          // premiumVoiceService.stopCurrentAudio();
                           setIsSpeaking(false);
                         } else {
                           handleSpeakResponse(message.content);
@@ -448,7 +446,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <button
                   onClick={() => {
                     voiceService.stopSpeaking();
-                    // premiumVoiceService.stopCurrentAudio();
                     setIsSpeaking(false);
                   }}
                   className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-full text-xs transition-colors"
@@ -506,7 +503,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <button
               onClick={() => {
                 voiceService.stopSpeaking();
-                // premiumVoiceService.stopCurrentAudio();
                 setIsSpeaking(false);
               }}
               className="flex items-center space-x-1 px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-full transition-colors"
@@ -584,13 +580,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <button
               type="button"
               onClick={() => {
-                // Toggle between basic and high-quality voice
-                const currentVoice = voiceService.getDefaultVoice();
-                console.log('Current voice:', currentVoice?.name);
-                // Force refresh voice selection
-                // voiceService.loadVoices(); // Private method - removed
-                const newVoice = voiceService.getDefaultVoice();
-                console.log('New voice:', newVoice?.name);
+                // Test voice with ElevenLabs
+                voiceService.testVoice();
               }}
               className="p-2 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
               title="Refresh voice selection for better quality"
@@ -624,13 +615,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Voice Settings */}
       {showVoiceSelector && (
-        <VoiceSettingsComponent
+        <ElevenLabsVoiceSettings
           isOpen={showVoiceSelector}
           onClose={() => setShowVoiceSelector(false)}
-          onSettingsChange={(settings: VoiceSettings) => {
-            console.log('Voice settings updated:', settings);
-            // Apply voice settings to the voice service
-            // TODO: Integrate with voice service to apply settings
+          onSettingsChange={(settings) => {
+            console.log('ElevenLabs voice settings updated:', settings);
+            // Settings are now properly integrated with ElevenLabs voice service
           }}
         />
       )}

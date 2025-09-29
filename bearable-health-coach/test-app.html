@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bearable WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; }
+        .connecting { background: #fff3cd; color: #856404; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; }
+        #output { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+    <h1>Bearable Health Coach - WebSocket Test</h1>
+
+    <div id="status" class="status connecting">🔄 Connecting...</div>
+
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="testMessage()">Send Test Message</button>
+
+    <h3>Output:</h3>
+    <div id="output"></div>
+
+    <script>
+        let ws = null;
+        const status = document.getElementById('status');
+        const output = document.getElementById('output');
+
+        function log(message) {
+            output.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateStatus(state, message) {
+            status.className = 'status ' + state;
+            status.innerHTML = message;
+        }
+
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+
+            const wsUrl = 'ws://localhost:3003/realtime';
+            log('🔗 Attempting to connect to: ' + wsUrl);
+            updateStatus('connecting', '🔄 Connecting...');
+
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                log('✅ WebSocket opened - Connected to proxy server');
+                updateStatus('connected', '🚀 Connected to Realtime API');
+            };
+
+            ws.onmessage = (event) => {
+                log('📥 Received message: ' + (typeof event.data === 'string' ? event.data : 'Binary data'));
+            };
+
+            ws.onerror = (error) => {
+                log('❌ WebSocket error: ' + error);
+                updateStatus('error', '❌ Connection Error');
+            };
+
+            ws.onclose = (event) => {
+                log('🔌 WebSocket closed: ' + event.code + ' - ' + event.reason);
+                updateStatus('error', '🔌 Disconnected');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function testMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+
+            const testEvent = {
+                type: 'session.update',
+                session: {
+                    modalities: ['text', 'audio'],
+                    instructions: 'You are a helpful health coach named Bear.',
+                    voice: 'alloy',
+                    input_audio_format: 'pcm16',
+                    output_audio_format: 'pcm16',
+                    input_audio_transcription: {
+                        model: 'whisper-1'
+                    }
+                }
+            };
+
+            log('📤 Sending test message: ' + JSON.stringify(testEvent));
+            ws.send(JSON.stringify(testEvent));
+        }
+
+        // Auto-connect on load
+        window.onload = connect;
+    </script>
+</body>
+</html>

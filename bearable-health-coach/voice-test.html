@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bearable Voice AI - Complete Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 15px; margin: 10px 0; border-radius: 8px; font-weight: bold; }
+        .connected { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .connecting { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .controls { display: flex; gap: 10px; margin: 20px 0; }
+        button { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .primary { background: #007bff; color: white; }
+        .primary:hover { background: #0056b3; }
+        .danger { background: #dc3545; color: white; }
+        .danger:hover { background: #c82333; }
+        .success { background: #28a745; color: white; }
+        .success:hover { background: #218838; }
+        #output { border: 1px solid #ddd; padding: 15px; height: 400px; overflow-y: scroll; background: #f8f9fa; border-radius: 6px; font-family: monospace; font-size: 12px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 6px; }
+        .test-section h3 { margin-top: 0; color: #333; }
+        .mic-indicator { display: inline-block; width: 20px; height: 20px; border-radius: 50%; margin-left: 10px; }
+        .mic-active { background: #28a745; animation: pulse 1s infinite; }
+        .mic-inactive { background: #dc3545; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .audio-level { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .audio-level-bar { height: 100%; background: linear-gradient(90deg, #28a745, #ffc107, #dc3545); transition: width 0.1s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐻 Bearable Health Coach - Voice AI Test</h1>
+
+        <div id="status" class="status connecting">🔄 Initializing...</div>
+
+        <div class="test-section">
+            <h3>🔗 WebSocket Connection Test</h3>
+            <div class="controls">
+                <button onclick="testWebSocket()" class="primary">Test WebSocket</button>
+                <button onclick="disconnect()" class="danger">Disconnect</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎤 Audio Input Test</h3>
+            <div class="controls">
+                <button onclick="testMicrophone()" class="primary">Test Microphone</button>
+                <button onclick="stopMicrophone()" class="danger">Stop Microphone</button>
+                <span id="micStatus">Not active</span>
+                <div class="mic-indicator" id="micIndicator"></div>
+            </div>
+            <div class="audio-level">
+                <div class="audio-level-bar" id="audioLevelBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🤖 Voice AI Interaction Test</h3>
+            <div class="controls">
+                <button onclick="startVoiceSession()" class="success">Start Voice Session</button>
+                <button onclick="sendTestMessage()" class="primary">Send Test Message</button>
+                <button onclick="stopVoiceSession()" class="danger">Stop Session</button>
+            </div>
+        </div>
+
+        <h3>📋 Test Output:</h3>
+        <div id="output"></div>
+
+        <div class="controls">
+            <button onclick="clearOutput()" class="primary">Clear Output</button>
+            <button onclick="runFullTest()" class="success">Run Complete Test Suite</button>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let audioContext = null;
+        let microphone = null;
+        let processor = null;
+        let isRecording = false;
+        let audioLevel = 0;
+
+        const status = document.getElementById('status');
+        const output = document.getElementById('output');
+        const micStatus = document.getElementById('micStatus');
+        const micIndicator = document.getElementById('micIndicator');
+        const audioLevelBar = document.getElementById('audioLevelBar');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            output.innerHTML += `<strong>${timestamp}:</strong> ${message}<br>`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(state, message) {
+            status.className = 'status ' + state;
+            status.innerHTML = message;
+        }
+
+        function updateMicStatus(active, level = 0) {
+            micStatus.textContent = active ? 'Active' : 'Not active';
+            micIndicator.className = 'mic-indicator ' + (active ? 'mic-active' : 'mic-inactive');
+            audioLevelBar.style.width = (level * 100) + '%';
+        }
+
+        // Test 1: WebSocket Connection
+        async function testWebSocket() {
+            log('🧪 <strong>TEST 1: WebSocket Connection</strong>');
+
+            if (ws) {
+                ws.close();
+            }
+
+            const wsUrl = 'ws://localhost:3003/realtime';
+            log('🔗 Connecting to: ' + wsUrl);
+            updateStatus('connecting', '🔄 Testing WebSocket...');
+
+            try {
+                ws = new WebSocket(wsUrl);
+                ws.binaryType = 'arraybuffer';
+
+                ws.onopen = () => {
+                    log('✅ WebSocket connected successfully');
+                    updateStatus('connected', '🚀 WebSocket Connected');
+                };
+
+                ws.onmessage = (event) => {
+                    const isText = typeof event.data === 'string';
+                    log('📥 Received: ' + (isText ? event.data.substring(0, 100) : 'Binary data (' + event.data.byteLength + ' bytes)'));
+                };
+
+                ws.onerror = (error) => {
+                    log('❌ WebSocket error: ' + error);
+                    updateStatus('error', '❌ WebSocket Error');
+                };
+
+                ws.onclose = (event) => {
+                    log('🔌 WebSocket closed: ' + event.code + ' - ' + event.reason);
+                    updateStatus('error', '🔌 Disconnected');
+                };
+
+            } catch (error) {
+                log('❌ WebSocket connection failed: ' + error.message);
+                updateStatus('error', '❌ Connection Failed');
+            }
+        }
+
+        // Test 2: Microphone Access
+        async function testMicrophone() {
+            log('🧪 <strong>TEST 2: Microphone Access</strong>');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                log('✅ Microphone access granted');
+
+                audioContext = new AudioContext();
+                microphone = audioContext.createMediaStreamSource(stream);
+
+                // Create audio worklet for processing
+                try {
+                    await audioContext.audioWorklet.addModule('http://localhost:3001/audio-processor.js');
+                    processor = new AudioWorkletNode(audioContext, 'realtime-processor');
+
+                    processor.port.onmessage = (event) => {
+                        const { type, data } = event.data;
+                        if (type === 'vad') {
+                            updateMicStatus(data.isSpeaking, data.energy);
+                            if (data.isSpeaking) {
+                                log('🎙️ Voice detected (energy: ' + data.energy.toFixed(3) + ')');
+                            }
+                        } else if (type === 'audio') {
+                            // Audio data received from processor
+                            audioLevel = Math.max(audioLevel * 0.9, data.reduce((sum, val) => sum + Math.abs(val), 0) / data.length);
+                        }
+                    };
+
+                    microphone.connect(processor);
+                    processor.connect(audioContext.destination);
+
+                    log('✅ AudioWorklet processor loaded and connected');
+                    isRecording = true;
+                    updateMicStatus(true);
+
+                } catch (error) {
+                    log('⚠️ AudioWorklet failed, using fallback: ' + error.message);
+                    // Fallback to basic audio processing
+                    const analyser = audioContext.createAnalyser();
+                    microphone.connect(analyser);
+
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    const updateLevel = () => {
+                        if (isRecording) {
+                            analyser.getByteFrequencyData(dataArray);
+                            const level = dataArray.reduce((sum, val) => sum + val, 0) / dataArray.length / 255;
+                            updateMicStatus(true, level);
+                            requestAnimationFrame(updateLevel);
+                        }
+                    };
+                    updateLevel();
+                    log('✅ Basic audio processing active');
+                }
+
+            } catch (error) {
+                log('❌ Microphone access failed: ' + error.message);
+                updateMicStatus(false);
+            }
+        }
+
+        function stopMicrophone() {
+            if (microphone) {
+                microphone.disconnect();
+                microphone = null;
+            }
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            isRecording = false;
+            updateMicStatus(false);
+            log('🔇 Microphone stopped');
+        }
+
+        // Test 3: Voice AI Session
+        async function startVoiceSession() {
+            log('🧪 <strong>TEST 3: Voice AI Session</strong>');
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected. Please test WebSocket first.');
+                return;
+            }
+
+            // Initialize session
+            const sessionConfig = {
+                type: 'session.update',
+                session: {
+                    modalities: ['text', 'audio'],
+                    instructions: 'You are Bear, a helpful health coach. Speak naturally and be encouraging.',
+                    voice: 'alloy',
+                    input_audio_format: 'pcm16',
+                    output_audio_format: 'pcm16',
+                    input_audio_transcription: {
+                        model: 'whisper-1'
+                    },
+                    turn_detection: {
+                        type: 'server_vad',
+                        threshold: 0.5,
+                        prefix_padding_ms: 300,
+                        silence_duration_ms: 200
+                    }
+                }
+            };
+
+            log('📤 Sending session configuration...');
+            ws.send(JSON.stringify(sessionConfig));
+
+            // Start microphone if not already active
+            if (!isRecording) {
+                await testMicrophone();
+            }
+
+            log('✅ Voice AI session started');
+        }
+
+        function sendTestMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+
+            const testMessage = {
+                type: 'conversation.item.create',
+                item: {
+                    type: 'message',
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'input_text',
+                            text: 'Hello Bear! Can you tell me about healthy morning routines?'
+                        }
+                    ]
+                }
+            };
+
+            log('📤 Sending test message...');
+            ws.send(JSON.stringify(testMessage));
+
+            // Trigger response
+            ws.send(JSON.stringify({ type: 'response.create' }));
+        }
+
+        function stopVoiceSession() {
+            stopMicrophone();
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            log('🛑 Voice AI session stopped');
+        }
+
+        function disconnect() {
+            stopVoiceSession();
+            updateStatus('error', '🔌 Disconnected');
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+
+        // Complete test suite
+        async function runFullTest() {
+            log('🚀 <strong>RUNNING COMPLETE TEST SUITE</strong>');
+            log('═══════════════════════════════════════');
+
+            clearOutput();
+
+            // Test 1: WebSocket
+            await testWebSocket();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Test 2: Microphone
+            await testMicrophone();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Test 3: Voice session
+            await startVoiceSession();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Test 4: Send message
+            sendTestMessage();
+
+            log('═══════════════════════════════════════');
+            log('✅ <strong>COMPLETE TEST SUITE FINISHED</strong>');
+            log('📊 Check the output above for any errors or issues');
+        }
+
+        // Auto-start WebSocket test
+        window.onload = () => {
+            log('🚀 Bearable Health Coach Voice AI Test Suite');
+            log('═══════════════════════════════════════');
+            testWebSocket();
+        };
+    </script>
+</body>
+</html>

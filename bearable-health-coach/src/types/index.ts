@@ -146,7 +146,10 @@ export type LifestylePillar =
   | 'stress_management'
   | 'restorative_sleep'
   | 'connectedness'
-  | 'substance_avoidance';
+  | 'substance_avoidance'
+  | 'movement'
+  | 'nutrition'
+  | 'sleep';
 
 export interface CoachTeam {
   primaryCoach: AICompanion;
@@ -174,9 +177,8 @@ export interface Message {
     sources?: string[];
     confidence?: number;
     emotionalTone?: string;
-    // Extended metadata for Realtime API
     source?: string;
-    inputType?: 'voice' | 'text' | 'keyboard' | 'realtime';
+    inputType?: 'voice' | 'text' | 'keyboard';
     completed?: boolean;
   };
 }
@@ -367,7 +369,7 @@ export interface AppState {
   coachTeam: CoachTeam | null;
   activeCoach: AICompanion | null; // Currently active coach in conversation
   currentCarePlan: CarePlan | null;
-  currentView: 'dashboard' | 'chat' | 'coaches' | 'goals' | 'activity' | 'caregivers' | 'care_plan' | 'settings';
+  currentView: 'dashboard' | 'chat' | 'multi_agent' | 'voice_multi_agent' | 'coaches' | 'goals' | 'activity' | 'caregivers' | 'care_plan' | 'settings';
   isLoading: boolean;
   error: string | null;
   pendingEscalations: EscalationTrigger[];
@@ -779,4 +781,163 @@ export interface DatabaseTables {
     goal_progress?: number;
     escalation_triggered: boolean;
   };
+}
+
+// Multi-Agent Health Conversation Types
+export interface HealthSpecialistAgent {
+  id: string;
+  name: string;
+  title: string;
+  specialization: LifestylePillar | 'primary_care' | 'mental_health' | 'chronic_care' | 'wellness_coaching';
+  avatar: string;
+  expertise: string[];
+  personalityTraits: string[];
+  communicationStyle: 'supportive' | 'clinical' | 'motivational' | 'analytical' | 'empathetic';
+  bio: string;
+  credentials: string[];
+  systemPrompt?: string;
+  isActive: boolean;
+  mayoClinicAffiliation?: boolean;
+}
+
+export interface ConversationMode {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  requiredSpecializations?: string[];
+  maxParticipants?: number;
+  facilitationStyle: 'collaborative' | 'facilitated' | 'sequential' | 'consensus';
+}
+
+export interface MultiAgentMessage {
+  id: string;
+  type: 'user' | 'agent' | 'system' | 'consensus' | 'facilitation';
+  content: string;
+  timestamp: Date;
+  agentId?: string;
+  agent?: HealthSpecialistAgent;
+  messageType: 'text' | 'voice' | 'file' | 'action' | 'recommendation' | 'consensus' | 'specialist_response' | 'facilitation' | 'user_input' | 'error';
+  inputMethod?: 'voice' | 'text';
+  role?: 'user' | 'assistant' | 'system';
+  agentName?: string;
+  agentAvatar?: string;
+  expertise?: string[];
+  specialization?: LifestylePillar | 'primary_care' | 'mental_health' | 'chronic_care' | 'wellness_coaching';
+  confidence?: number;
+  keyPoints?: string[];
+  recommendations?: string[];
+  // Consensus-specific properties
+  consensusLevel?: 'low' | 'medium' | 'high';
+  agreedPoints?: string[];
+  disagreements?: string[];
+  nextSteps?: string[];
+  metadata?: {
+    inputType?: 'voice' | 'text';
+    source?: 'chat' | 'system' | 'facilitation';
+    completed?: boolean;
+    confidence?: number;
+    consensusLevel?: 'low' | 'medium' | 'high';
+    escalation?: {
+      reason: string;
+      urgency: 'low' | 'medium' | 'high' | 'emergency';
+      targetCaregiverId?: string;
+    };
+    healthMetrics?: {
+      category: LifestylePillar;
+      impact: 'positive' | 'negative' | 'neutral';
+      actionRequired: boolean;
+    };
+  };
+  attachments?: any[];
+  relatedGoalIds?: string[];
+}
+
+export interface HealthConversation {
+  id: string;
+  userId: string;
+  mode: ConversationMode;
+  messages: MultiAgentMessage[];
+  selectedAgents: string[];
+  facilitatorAgent?: HealthSpecialistAgent;
+  documentIds: string[];
+  healthGoalIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  settings: HealthConversationSettings;
+  metadata?: {
+    context?: string;
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    tags?: string[];
+    phase?: 'assessment' | 'planning' | 'implementation' | 'monitoring' | 'adjustment';
+    consensusReached?: boolean;
+    carePlanUpdated?: boolean;
+  };
+}
+
+export interface HealthConversationSettings {
+  enableConsensusBuilding: boolean;
+  enableFacilitation: boolean;
+  maxResponseRounds: number;
+  requireUnanimous: boolean;
+  enableVoiceMode: boolean;
+  autoEscalation: boolean;
+  enableHealthTracking: boolean;
+  privacyLevel: 'individual' | 'team' | 'caregiver' | 'family';
+}
+
+// Voice and Speech Interfaces for ElevenLabs Integration
+export interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
+
+// Enhanced HealthSpecialist that includes voice capabilities
+export interface VoiceOption {
+  elevenlabs_voice_id: string;
+  name: string;
+  description: string;
+  gender: 'male' | 'female' | 'neutral';
+  accent: string;
+  settings: VoiceSettings;
+}
+
+export interface HealthSpecialist {
+  id: string;
+  name: string;
+  title: string;
+  specialization: string;
+  description: string;
+  avatar: string;
+  voices: VoiceOption[];
+  defaultVoiceId: string; // Points to one of the voice IDs in voices array
+  personality: string;
+  expertise: string[];
+  isCustom?: boolean; // True for user-created specialists
+  createdBy?: string; // User ID who created this specialist
+  isActive?: boolean; // Can be deactivated
+  mayoClinicAffiliation?: boolean;
+}
+
+export interface CustomCoachTemplate {
+  id: string;
+  name: string;
+  title: string;
+  specialization: string;
+  description: string;
+  avatar: string;
+  personality: string;
+  expertise: string[];
+  systemPrompt: string;
+  preferredVoiceId?: string;
+  voiceSettings?: VoiceSettings;
+  isPublic: boolean; // Can other users use this template?
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  usageCount: number;
+  rating: number;
 }

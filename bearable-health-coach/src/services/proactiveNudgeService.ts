@@ -437,15 +437,19 @@ export class ProactiveNudgeService {
   }
 
   private static generatePillarMotivationMessage(pillar: LifestylePillar, user: User): string {
-    const messages = {
+    const messages: Record<string, string> = {
       optimal_nutrition: `${user.name}, did you know that good nutrition is the foundation of energy and mood? Let's explore some delicious, healthy options that fit your lifestyle! 🥗`,
       physical_activity: `Movement is medicine, ${user.name}! Even 5 minutes of activity can boost your mood and energy. What type of movement sounds fun to you today? 🏃‍♀️`,
       stress_management: `${user.name}, managing stress isn't just about feeling better - it's about giving your body the best chance to heal and thrive. Let's find what works for you! 🧘‍♀️`,
       restorative_sleep: `Quality sleep is when your body does its best healing work, ${user.name}. Let's create the perfect environment for restorative rest! 😴`,
       connectedness: `Strong relationships are one of the best predictors of health and happiness, ${user.name}. Who in your life brings you joy? 🤝`,
-      substance_avoidance: `Every healthy choice you make, ${user.name}, is an investment in your future self. Let's find alternatives that serve your wellbeing! 🌿`
+      substance_avoidance: `Every healthy choice you make, ${user.name}, is an investment in your future self. Let's find alternatives that serve your wellbeing! 🌿`,
+      // Additional aliases
+      movement: `Movement is medicine, ${user.name}! Even 5 minutes of activity can boost your mood and energy. What type of movement sounds fun to you today? 🏃‍♀️`,
+      nutrition: `${user.name}, did you know that good nutrition is the foundation of energy and mood? Let's explore some delicious, healthy options that fit your lifestyle! 🥗`,
+      sleep: `Quality sleep is when your body does its best healing work, ${user.name}. Let's create the perfect environment for restorative rest! 😴`
     };
-    return messages[pillar];
+    return messages[pillar] || `Hello ${user.name}! Let's focus on improving your health and wellbeing together! 🌟`;
   }
 
   private static daysSinceUpdate(date: Date): number {

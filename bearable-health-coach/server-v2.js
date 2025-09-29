@@ -41,6 +41,190 @@ const ConnectionState = {
   FAILED: 'failed'
 };
 
+// Voice Activity Detection for natural conversation flow
+class VoiceActivityDetector {
+  constructor() {
+    this.silenceThreshold = 1500; // 1.5 seconds of silence to trigger response
+    this.minSpeechDuration = 300; // Minimum 300ms of speech to be considered valid
+    this.isActive = false;
+    this.speechStartTime = null;
+    this.lastActivityTime = null;
+    this.silenceTimer = null;
+  }
+
+  detectVoiceActivity(audioLevel, timestamp) {
+    const currentTime = timestamp || Date.now();
+    const isSpeaking = audioLevel > 0.1; // Threshold for voice detection
+
+    if (isSpeaking) {
+      if (!this.isActive) {
+        // Speech started
+        this.isActive = true;
+        this.speechStartTime = currentTime;
+        console.log('🎤 Voice activity detected - speech started');
+      }
+      this.lastActivityTime = currentTime;
+
+      // Clear any pending silence timer
+      if (this.silenceTimer) {
+        clearTimeout(this.silenceTimer);
+        this.silenceTimer = null;
+      }
+    } else if (this.isActive) {
+      // Potential silence detected, start timer if not already started
+      if (!this.silenceTimer) {
+        this.silenceTimer = setTimeout(() => {
+          this.onSilenceDetected();
+        }, this.silenceThreshold);
+      }
+    }
+
+    return {
+      isActive: this.isActive,
+      speechDuration: this.isActive ? currentTime - this.speechStartTime : 0,
+      silenceDuration: this.lastActivityTime ? currentTime - this.lastActivityTime : 0
+    };
+  }
+
+  onSilenceDetected() {
+    if (this.isActive) {
+      const speechDuration = Date.now() - this.speechStartTime;
+
+      if (speechDuration >= this.minSpeechDuration) {
+        console.log(`🔇 End of speech detected (${speechDuration}ms duration)`);
+        this.isActive = false;
+        this.speechStartTime = null;
+        this.lastActivityTime = null;
+        this.silenceTimer = null;
+
+        // Return true to indicate speech has ended
+        return true;
+      } else {
+        console.log('🔇 Silence detected but speech too short, continuing...');
+        this.isActive = false;
+        this.speechStartTime = null;
+      }
+    }
+
+    this.silenceTimer = null;
+    return false;
+  }
+
+  reset() {
+    this.isActive = false;
+    this.speechStartTime = null;
+    this.lastActivityTime = null;
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+  }
+
+  forceEndSpeech() {
+    const wasActive = this.isActive;
+    this.reset();
+    return wasActive;
+  }
+}
+
+// Multi-agent conversation orchestrator for health specialists
+class HealthConversationOrchestrator {
+  constructor() {
+    this.activeAgents = new Map(); // agentId -> agent config
+    this.conversationHistory = [];
+    this.currentSpeaker = null;
+    this.facilitatorMode = false;
+
+    // Default health specialist voices
+    this.healthVoices = {
+      'dr-maya-wellness': { voiceId: 'pNInz6obpgDQGcFmaJgB', name: 'Dr. Maya' },
+      'coach-alex-fitness': { voiceId: 'TxGEqnHWrfWFTfGW9XjX', name: 'Coach Alex' },
+      'nutritionist-sarah': { voiceId: 'jsCqWAovK2LkecY7zXl4', name: 'Sarah' },
+      'therapist-david': { voiceId: 'onwK4e9ZLuTAKqWW03F9', name: 'Dr. David' },
+      'sleep-specialist-lisa': { voiceId: 'XB0fDUnXU5powFXDhCwa', name: 'Dr. Lisa' },
+      'facilitator-dr-chen': { voiceId: 'AZnzlk1XvdvUeBnXmlld', name: 'Dr. Chen' }
+    };
+  }
+
+  async processUserInput(text, selectedAgents = []) {
+    console.log(`🗣️ Processing user input: "${text}" with agents: ${selectedAgents.join(', ')}`);
+
+    // Simple routing logic (in production this would be more sophisticated)
+    const responses = [];
+
+    if (selectedAgents.length === 0) {
+      // Default to primary care if no agents selected
+      selectedAgents = ['dr-maya-wellness'];
+    }
+
+    for (const agentId of selectedAgents) {
+      if (this.healthVoices[agentId]) {
+        const response = await this.generateAgentResponse(agentId, text);
+        responses.push({
+          agentId,
+          text: response,
+          voiceConfig: this.healthVoices[agentId]
+        });
+      }
+    }
+
+    return responses;
+  }
+
+  async generateAgentResponse(agentId, userInput) {
+    // Placeholder for AI response generation
+    // In production, this would call your multi-agent AI service
+    const agentPersonalities = {
+      'dr-maya-wellness': 'As a primary care physician, I focus on your overall health and preventive care.',
+      'coach-alex-fitness': 'As your fitness coach, I\'m here to help you achieve your movement and exercise goals!',
+      'nutritionist-sarah': 'As a registered dietitian, I can help you with evidence-based nutrition guidance.',
+      'therapist-david': 'As a psychologist, I\'m here to support your mental health and emotional wellbeing.',
+      'sleep-specialist-lisa': 'As a sleep specialist, I can help you optimize your sleep for better health.',
+      'facilitator-dr-chen': 'I help coordinate our team to ensure you get comprehensive care.'
+    };
+
+    const personality = agentPersonalities[agentId] || 'I\'m here to help with your health questions.';
+
+    // Simple response (in production, integrate with your AI service)
+    return `${personality} Regarding "${userInput}", I recommend we discuss this further to provide you with the best guidance.`;
+  }
+
+  async generateSpeechForAgent(agentId, text) {
+    const voiceConfig = this.healthVoices[agentId];
+    if (!voiceConfig) {
+      throw new Error(`Unknown agent: ${agentId}`);
+    }
+
+    console.log(`🎙️ Generating speech for ${voiceConfig.name}: "${text.substring(0, 50)}..."`);
+
+    try {
+      // Call our ElevenLabs TTS endpoint
+      const response = await fetch('http://localhost:3004/api/voice/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voiceId: voiceConfig.voiceId,
+          settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.2
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`TTS failed: ${response.status}`);
+      }
+
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.error(`❌ Speech generation failed for ${agentId}:`, error);
+      throw error;
+    }
+  }
+}
+
 // WebSocket connection manager with proper error handling
 class RealtimeConnectionManager {
   constructor(clientWs, apiKey) {
@@ -61,6 +245,17 @@ class RealtimeConnectionManager {
     this.messageCount = 0;
     this.messageResetTime = Date.now();
     this.maxMessagesPerMinute = 60;
+
+    // Add conversation orchestrator
+    this.conversationOrchestrator = new HealthConversationOrchestrator();
+    this.isConversationMode = false;
+    this.selectedAgents = [];
+
+    // Voice Activity Detection
+    this.voiceActivityDetector = new VoiceActivityDetector();
+    this.isListening = false;
+    this.currentTranscript = '';
+    this.vadTimeout = null;
 
     this.setupClientHandlers();
     this.connect();
@@ -172,21 +367,195 @@ class RealtimeConnectionManager {
     });
   }
 
-  handleClientMessage(data) {
+  async handleClientMessage(data) {
     // Rate limiting
     if (!this.checkRateLimit()) {
       console.warn('⚠️ Rate limit exceeded for client');
       return;
     }
 
-    if (this.state === ConnectionState.CONNECTED &&
-        this.openaiWs &&
-        this.openaiWs.readyState === WebSocket.OPEN) {
+    try {
+      // Parse client message
+      const message = JSON.parse(data.toString());
+      console.log(`📨 Client message type: ${message.type}`);
 
-      this.openaiWs.send(data);
-      console.log('📤 Message forwarded to OpenAI');
-    } else {
-      this.queueMessage(data);
+      // Handle conversation-specific messages first (before OpenAI processing)
+      if (message.type && message.type.startsWith('conversation.')) {
+        await this.handleConversationMessage(message);
+        return;
+      }
+
+      // Handle voice activity and speech messages
+      if (message.type && (message.type.startsWith('voice.') || message.type.startsWith('speech.'))) {
+        await this.handleVoiceMessage(message);
+        return;
+      }
+
+      // Handle OpenAI Realtime API messages
+      if (this.state === ConnectionState.CONNECTED &&
+          this.openaiWs &&
+          this.openaiWs.readyState === WebSocket.OPEN) {
+
+        // Intercept conversation.item.create for audio transcript processing
+        if (message.type === 'conversation.item.create' &&
+            message.item?.type === 'message' &&
+            message.item?.role === 'user' &&
+            this.isConversationMode) {
+
+          const transcript = message.item.content?.[0]?.transcript;
+          if (transcript) {
+            console.log(`🎤 Transcript received: "${transcript}"`);
+            await this.processConversationInput(transcript);
+            return;
+          }
+        }
+
+        this.openaiWs.send(data);
+        console.log('📤 Message forwarded to OpenAI');
+      } else {
+        this.queueMessage(data);
+      }
+
+    } catch (error) {
+      console.error('❌ Error handling client message:', error);
+
+      // If it's not JSON, treat as raw data and forward to OpenAI
+      if (this.state === ConnectionState.CONNECTED &&
+          this.openaiWs &&
+          this.openaiWs.readyState === WebSocket.OPEN) {
+        this.openaiWs.send(data);
+        console.log('📤 Raw message forwarded to OpenAI');
+      } else {
+        this.queueMessage(data);
+      }
+    }
+  }
+
+  async handleConversationMessage(message) {
+    switch (message.type) {
+      case 'conversation.configure':
+        this.isConversationMode = true;
+        this.selectedAgents = message.agents || ['dr-maya-wellness'];
+        console.log(`🩺 Conversation mode enabled with agents: ${this.selectedAgents.join(', ')}`);
+
+        this.notifyClient('conversation_configured', {
+          agents: this.selectedAgents,
+          message: 'Conversation mode active'
+        });
+        break;
+
+      case 'conversation.input':
+        if (this.isConversationMode) {
+          await this.processConversationInput(message.text);
+        }
+        break;
+
+      default:
+        console.warn(`⚠️ Unknown conversation message type: ${message.type}`);
+    }
+  }
+
+  async handleVoiceMessage(message) {
+    if (!this.isConversationMode) {
+      console.warn('⚠️ Voice message received but not in conversation mode');
+      return;
+    }
+
+    switch (message.type) {
+      case 'voice.activity':
+        const vadResult = this.voiceActivityDetector.detectVoiceActivity(
+          message.audioLevel || 0,
+          message.timestamp
+        );
+
+        // Send VAD status to client
+        this.notifyClient('voice_activity', vadResult);
+
+        // If silence is detected and speech ended, process any accumulated transcript
+        if (!vadResult.isActive && this.currentTranscript.trim()) {
+          console.log(`🎤 Processing accumulated transcript: "${this.currentTranscript}"`);
+          await this.processConversationInput(this.currentTranscript);
+          this.currentTranscript = '';
+        }
+        break;
+
+      case 'speech.partial':
+        this.currentTranscript = message.transcript || '';
+        console.log(`🎤 Partial transcript: "${this.currentTranscript}"`);
+
+        // Reset VAD timeout when new speech comes in
+        if (this.vadTimeout) {
+          clearTimeout(this.vadTimeout);
+        }
+
+        // Set timeout to process transcript if no more speech comes
+        this.vadTimeout = setTimeout(() => {
+          if (this.currentTranscript.trim()) {
+            console.log(`⏰ VAD timeout - processing transcript: "${this.currentTranscript}"`);
+            this.processConversationInput(this.currentTranscript);
+            this.currentTranscript = '';
+          }
+        }, 2000); // 2 second timeout
+        break;
+
+      default:
+        console.warn(`⚠️ Unknown voice message type: ${message.type}`);
+    }
+  }
+
+
+  async processConversationInput(text) {
+    try {
+      console.log(`🔄 Processing conversation input: "${text}"`);
+
+      // Get responses from selected health specialists
+      const responses = await this.conversationOrchestrator.processUserInput(text, this.selectedAgents);
+
+      // Send responses back to client with voice
+      for (const response of responses) {
+        console.log(`🗣️ ${response.voiceConfig.name}: "${response.text}"`);
+
+        // Notify client of text response
+        this.notifyClient('conversation_response', {
+          agentId: response.agentId,
+          agentName: response.voiceConfig.name,
+          text: response.text
+        });
+
+        try {
+          // Generate speech
+          const audioBuffer = await this.conversationOrchestrator.generateSpeechForAgent(
+            response.agentId,
+            response.text
+          );
+
+          // Send audio to client
+          this.sendAudioToClient(response.agentId, response.voiceConfig.name, audioBuffer);
+
+        } catch (audioError) {
+          console.error(`❌ Audio generation failed for ${response.agentId}:`, audioError);
+          // Continue with text-only response
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Error processing conversation input:', error);
+      this.notifyClient('error', { message: 'Failed to process conversation input' });
+    }
+  }
+
+  sendAudioToClient(agentId, agentName, audioBuffer) {
+    if (this.clientWs.readyState === WebSocket.OPEN) {
+      const audioMessage = JSON.stringify({
+        type: 'conversation_audio',
+        agentId: agentId,
+        agentName: agentName,
+        audioData: Buffer.from(audioBuffer).toString('base64'),
+        timestamp: new Date().toISOString()
+      });
+
+      this.clientWs.send(audioMessage);
+      console.log(`🔊 Sent audio for ${agentName} (${audioBuffer.byteLength} bytes)`);
     }
   }
 
@@ -397,6 +766,149 @@ wss.on('connection', (ws, req) => {
     console.log(`🔌 Cleaning up connection ${connectionId}`);
     activeConnections.delete(connectionId);
   });
+});
+
+// ElevenLabs TTS endpoint for enhanced voice synthesis
+app.post('/api/voice/tts', async (req, res) => {
+  try {
+    const { text, voiceId, settings } = req.body;
+
+    // Enhanced input validation
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return res.status(400).json({ error: 'Valid text is required' });
+    }
+
+    if (text.length > 5000) {
+      return res.status(400).json({ error: 'Text too long (max 5000 characters)' });
+    }
+
+    // Get ElevenLabs API key
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      console.error('❌ ElevenLabs API key not found for TTS');
+      return res.status(500).json({ error: 'ElevenLabs voice service not configured' });
+    }
+
+    console.log(`🎙️ Generating ElevenLabs voice: "${text.substring(0, 50)}..." with voice ${voiceId}`);
+
+    // Call ElevenLabs TTS API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    const elevenLabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+
+    const response = await fetch(elevenLabsUrl, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: settings?.stability ?? 0.5,
+          similarity_boost: settings?.similarity_boost ?? 0.75,
+          style: settings?.style ?? 0.2,
+          use_speaker_boost: settings?.use_speaker_boost ?? false
+        }
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ ElevenLabs TTS API error:', response.status, errorText);
+
+      if (response.status === 429) {
+        return res.status(429).json({ error: 'Rate limit exceeded. Please try again later.' });
+      } else if (response.status === 401) {
+        return res.status(500).json({ error: 'Authentication error with ElevenLabs voice service' });
+      } else {
+        return res.status(500).json({ error: 'ElevenLabs voice generation failed' });
+      }
+    }
+
+    console.log(`✅ ElevenLabs voice generated successfully (${voiceId})`);
+
+    // Get the audio buffer and stream response with proper headers
+    const audioBuffer = await response.arrayBuffer();
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Voice-Service', 'elevenlabs');
+    res.setHeader('X-Voice-ID', voiceId);
+    res.setHeader('X-Generated-At', new Date().toISOString());
+    res.setHeader('Content-Length', audioBuffer.byteLength);
+
+    res.send(Buffer.from(audioBuffer));
+
+  } catch (error) {
+    console.error('❌ ElevenLabs voice generation error:', error);
+
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: 'Voice generation timeout' });
+    }
+
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ElevenLabs voices list endpoint
+app.get('/api/voice/voices', async (req, res) => {
+  try {
+    // Get ElevenLabs API key
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      console.error('❌ ElevenLabs API key not found for voices');
+      return res.status(500).json({ error: 'ElevenLabs voice service not configured' });
+    }
+
+    console.log('🎤 Fetching available ElevenLabs voices...');
+
+    // Call ElevenLabs voices API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'xi-api-key': apiKey
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ ElevenLabs voices API error:', response.status, errorText);
+
+      if (response.status === 401) {
+        return res.status(500).json({ error: 'Authentication error with ElevenLabs voice service' });
+      } else {
+        return res.status(500).json({ error: 'Failed to fetch voices from ElevenLabs' });
+      }
+    }
+
+    const data = await response.json();
+    console.log(`✅ Fetched ${data.voices?.length || 0} ElevenLabs voices`);
+
+    res.json(data);
+
+  } catch (error) {
+    console.error('❌ ElevenLabs voices fetch error:', error);
+
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: 'Voices fetch timeout' });
+    }
+
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Enhanced voice generation endpoint with better error handling

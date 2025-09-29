@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, AICompanion, AppState, Conversation, CoachTeam, CarePlan } from './types';
-import { BearCompanion } from './components/BearCompanion';
-import { ChatInterface } from './components/ChatInterface';
+import { User, AICompanion, AppState, CarePlan } from './types';
 import { ActivityLog } from './components/ActivityLog';
 import { CaregiverDashboard } from './components/CaregiverDashboard';
 import { HealthGoals } from './components/HealthGoals';
@@ -9,8 +7,8 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { CoachTeamSelector } from './components/CoachTeamSelector';
 import { CarePlanDashboard } from './components/CarePlanDashboard';
 import CoachDashboard from './components/CoachDashboard/CoachDashboard';
+import { VoiceMultiAgentChat } from './components/VoiceMultiAgentChat';
 import { CoachTeamService } from './services/coachTeamService';
-import { CarePlanService } from './services/carePlanService';
 import './App.css';
 
 // Mock data for demonstration
@@ -86,7 +84,6 @@ function App() {
     pendingEscalations: []
   });
 
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
 
   useEffect(() => {
@@ -132,7 +129,7 @@ function App() {
   };
 
   const handleStartConversation = (coach: AICompanion) => {
-    setAppState(prev => ({ ...prev, activeCoach: coach, currentView: 'chat' }));
+    setAppState(prev => ({ ...prev, activeCoach: coach, currentView: 'multi_agent' }));
   };
 
   if (showWelcome || !appState.currentUser) {
@@ -173,7 +170,7 @@ function App() {
             <div className="flex space-x-8">
               {[
                 { id: 'dashboard', label: '🏠 Dashboard', view: 'dashboard' as const },
-                { id: 'chat', label: '💬 Chat', view: 'chat' as const },
+                { id: 'multi_agent', label: '💬 Consultation', view: 'multi_agent' as const },
                 { id: 'coaches', label: '🤖 Manage Coaches', view: 'coaches' as const },
                 { id: 'care_plan', label: '📋 Care Plan', view: 'care_plan' as const },
                 { id: 'goals', label: '🎯 Goals', view: 'goals' as const },
@@ -234,15 +231,10 @@ function App() {
           </div>
         )}
 
-        {appState.currentView === 'chat' && appState.activeCoach && appState.currentUser && (
-          <ChatInterface
+        {appState.currentView === 'multi_agent' && appState.currentUser && (
+          <VoiceMultiAgentChat
             user={appState.currentUser}
-            companion={appState.activeCoach}
-            coachTeam={appState.coachTeam || undefined}
-            conversation={currentConversation}
-            onConversationUpdate={setCurrentConversation}
-            onCoachSelect={handleCoachSelect}
-            startWithVoice={true}
+            onClose={() => handleViewChange('dashboard')}
           />
         )}
 

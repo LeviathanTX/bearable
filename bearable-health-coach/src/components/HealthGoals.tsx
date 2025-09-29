@@ -109,6 +109,9 @@ export const HealthGoals: React.FC<HealthGoalsProps> = ({ userId }) => {
     stress_management: 'bg-orange-100 text-orange-800 border-orange-200',
     connectedness: 'bg-pink-100 text-pink-800 border-pink-200',
     substance_avoidance: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    movement: 'bg-blue-100 text-blue-800 border-blue-200',
+    nutrition: 'bg-green-100 text-green-800 border-green-200',
+    sleep: 'bg-purple-100 text-purple-800 border-purple-200',
     medication: 'bg-red-100 text-red-800 border-red-200',
     general: 'bg-gray-100 text-gray-800 border-gray-200'
   };
@@ -120,6 +123,9 @@ export const HealthGoals: React.FC<HealthGoalsProps> = ({ userId }) => {
     stress_management: '🧘‍♀️',
     connectedness: '🤝',
     substance_avoidance: '🚭',
+    movement: '🏃‍♀️',
+    nutrition: '🥗',
+    sleep: '😴',
     medication: '💊',
     general: '🎯'
   };
