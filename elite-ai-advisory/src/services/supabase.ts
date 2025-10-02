@@ -7,13 +7,23 @@ const supabaseAnonKey = (process.env.REACT_APP_SUPABASE_ANON_KEY || 'demo-key').
 // Demo mode flag
 const isDemoMode = !process.env.REACT_APP_SUPABASE_URL;
 
-// Debug logging
-console.log('Supabase initialization:', {
+// Debug logging with more details
+console.log('🔧 Supabase initialization:', {
   url: supabaseUrl,
+  urlSource: process.env.REACT_APP_SUPABASE_URL ? 'env var' : 'fallback',
   hasAnonKey: !!supabaseAnonKey,
   anonKeyLength: supabaseAnonKey?.length || 0,
-  isDemoMode
+  keySource: process.env.REACT_APP_SUPABASE_ANON_KEY ? 'env var' : 'fallback',
+  isDemoMode,
+  envVarPresent: !!process.env.REACT_APP_SUPABASE_URL
 });
+
+// Alert if using fallback values
+if (isDemoMode) {
+  console.warn('⚠️ RUNNING IN DEMO MODE - No Supabase URL configured');
+} else {
+  console.log('✅ Production mode - Using real Supabase at:', supabaseUrl);
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -187,9 +197,12 @@ export const signIn = async (email: string, password: string) => {
 
   try {
     console.log('Testing Supabase connectivity...');
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Has anon key:', !!supabaseAnonKey);
     const startTime = Date.now();
 
     // Attempt authentication with shorter timeout
+    console.log('Calling supabase.auth.signInWithPassword...');
     const signinPromise = supabase.auth.signInWithPassword({
       email,
       password,
