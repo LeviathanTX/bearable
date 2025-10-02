@@ -22,7 +22,7 @@ export class AIServiceClient {
     maxTokens?: number;
   }): Promise<AIResponse> {
     const timestamp = new Date().toISOString();
-    
+
     // COMPREHENSIVE DEBUG LOGGING
     console.log(`🔍 [${timestamp}] AI SERVICE CALL INITIATED`);
     console.log('📊 Service Configuration:', {
@@ -33,7 +33,7 @@ export class AIServiceClient {
       model: this.config.model,
       environment: process.env.NODE_ENV
     });
-    
+
     console.log('💬 Request Details:', {
       messageCount: messages.length,
       lastUserMessage: messages.filter(m => m.role === 'user').slice(-1)[0]?.content?.substring(0, 100) + '...',
@@ -41,16 +41,21 @@ export class AIServiceClient {
       maxTokens: options?.maxTokens
     });
 
-    const isDevelopmentMode = !this.config.apiKey || 
-                             this.config.apiKey.trim().length === 0 || 
-                             this.config.apiKey === 'demo-key';
-    
-    if (isDevelopmentMode) {
-      console.log('⚠️ USING MOCK RESPONSE - No valid API key detected');
-      return this.generateMockResponse(messages, options);
+    // Always use proxy in production, or when API key is not configured
+    const useProxy = process.env.NODE_ENV === 'production' || !this.config.apiKey || this.config.apiKey.trim().length === 0;
+
+    if (useProxy) {
+      console.log('🔄 USING VERCEL API PROXY for AI calls');
+      try {
+        return await this.callViaProxy(messages, options);
+      } catch (error) {
+        console.error(`🚨 PROXY API ERROR:`, error);
+        console.log('⚠️ FALLING BACK TO MOCK RESPONSE due to proxy error');
+        return this.generateMockResponse(messages, options);
+      }
     }
-    
-    console.log('🚀 CALLING REAL AI API for service:', this.config.id);
+
+    console.log('🚀 CALLING AI API DIRECTLY for service:', this.config.id);
 
     try {
       switch (this.config.id) {
@@ -75,6 +80,45 @@ export class AIServiceClient {
       console.log('🔄 FALLING BACK TO MOCK RESPONSE due to API error');
       return this.generateMockResponse(messages, options);
     }
+  }
+
+  private async callViaProxy(messages: AIMessage[], options?: any): Promise<AIResponse> {
+    console.log('📡 Calling Vercel API proxy endpoint');
+
+    const proxyUrl = '/api/generate';
+
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        service: this.config.id,
+        model: this.config.model,
+        messages: messages,
+        options: {
+          temperature: options?.temperature || 0.7,
+          maxTokens: options?.maxTokens || 2000
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('❌ PROXY API ERROR:', error);
+      throw new Error(`Proxy API Error ${response.status}: ${error.error || error.details || 'Request failed'}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ PROXY API SUCCESS:', {
+      contentLength: data.content?.length || 0,
+      hasUsage: !!data.usage
+    });
+
+    return {
+      content: data.content,
+      usage: data.usage
+    };
   }
 
   private async generateMockResponse(messages: AIMessage[], options?: any): Promise<AIResponse> {
