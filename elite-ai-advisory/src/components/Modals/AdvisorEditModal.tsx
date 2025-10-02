@@ -148,6 +148,7 @@ Always maintain your persona and provide advice that reflects your expertise are
       expertise: formData.expertise || [],
       personality: formData.personality || '',
       avatar_emoji: formData.avatar_emoji || '👨‍💼',
+      avatar_image: formData.avatar_image,
       background: formData.background || '',
       ai_service: formData.ai_service || 'claude',
       system_prompt: formData.system_prompt || '',
