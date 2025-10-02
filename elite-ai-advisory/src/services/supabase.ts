@@ -186,23 +186,17 @@ export const signIn = async (email: string, password: string) => {
   console.log('Supabase client initialized with URL:', supabaseUrl);
 
   try {
-    // Test basic connectivity first
-    const isConnected = await testSupabaseConnectivity();
-    if (!isConnected) {
-      throw new Error('Unable to connect to Supabase - check network and configuration');
-    }
-
     console.log('Testing Supabase connectivity...');
     const startTime = Date.now();
 
-    // Add a timeout to prevent hanging - increased to 30 seconds
+    // Attempt authentication with shorter timeout
     const signinPromise = supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Signin timeout after 30 seconds')), 30000)
+      setTimeout(() => reject(new Error('Authentication timed out. Please check your internet connection or try again later.')), 15000)
     );
 
     console.log('Starting authentication request...');
@@ -218,6 +212,16 @@ export const signIn = async (email: string, password: string) => {
       hasSession: !!data?.session
     });
 
+    // Check for common errors and provide helpful messages
+    if (error) {
+      if (error.message?.includes('Invalid login credentials')) {
+        return { data: null, error: { message: 'Invalid email or password. Please check your credentials or sign up for a new account.' } };
+      }
+      if (error.message?.includes('Email not confirmed')) {
+        return { data: null, error: { message: 'Please check your email to confirm your account before signing in.' } };
+      }
+    }
+
     return { data, error };
   } catch (err: any) {
     console.error('Supabase auth exception:', {
@@ -225,7 +229,13 @@ export const signIn = async (email: string, password: string) => {
       stack: err.stack,
       name: err.name
     });
-    return { data: null, error: { message: err.message || 'Authentication failed' } };
+
+    // Provide user-friendly error message
+    const userMessage = err.message?.includes('timeout')
+      ? 'Sign-in timed out. This may be due to network issues or Supabase configuration. Please try again or contact support.'
+      : err.message || 'Authentication failed. Please try again.';
+
+    return { data: null, error: { message: userMessage } };
   }
 };
 
