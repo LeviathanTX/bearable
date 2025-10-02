@@ -85,8 +85,8 @@ function LandingPage({ onGetStarted }: { onGetStarted: () => void }) {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Celebrity Advisory Board</h2>
           <div className="flex flex-wrap justify-center gap-4">
             {[
-              'Mark Cuban', 'Reid Hoffman', 'Jason Calacanis', 
-              'Barbara Corcoran', 'Daymond John', 'Sheryl Sandberg'
+              'Jeff', 'Gordon Daugherty', 'Mark Cuban', 'Reid Hoffman',
+              'Jason Calacanis', 'Barbara Corcoran'
             ].map((name) => (
               <div key={name} className="bg-gray-50 rounded-lg px-4 py-2">
                 <span className="font-medium text-gray-700">{name}</span>
