@@ -57,13 +57,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
       if (error) {
-        // If user doesn't exist in our users table, create them
+        // If user doesn't exist in our user_profiles table, create them
         if (error.code === 'PGRST116') {
           const { data: authUser } = await supabase.auth.getUser();
           if (authUser.user) {
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
 
             const { data: createdUser, error: createError } = await supabase
-              .from('users')
+              .from('user_profiles')
               .insert([newUser])
               .select()
               .single();
