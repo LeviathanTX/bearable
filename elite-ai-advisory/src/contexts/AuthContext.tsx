@@ -24,11 +24,27 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // BYPASS: Auto-login for development/testing
+  const bypassAuth = true; // Set to false to re-enable authentication
+
+  const [user, setUser] = useState<User | null>(bypassAuth ? {
+    id: 'bypass-user-123',
+    email: 'LeviathanTX@gmail.com',
+    full_name: 'Jeff (Bypass Mode)',
+    subscription_tier: 'founder',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  } : null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(bypassAuth ? false : true);
 
   useEffect(() => {
+    // Skip auth initialization if bypass is enabled
+    if (bypassAuth) {
+      console.log('🔓 Auth bypass enabled - skipping Supabase initialization');
+      return;
+    }
+
     // Check active sessions and sets the user
     getCurrentUser().then(({ user: currentUser }) => {
       setSupabaseUser(currentUser);
@@ -42,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for changes on auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSupabaseUser(session?.user ?? null);
-      
+
       if (session?.user) {
         await fetchUserProfile(session.user.id);
       } else {
@@ -52,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [bypassAuth]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
