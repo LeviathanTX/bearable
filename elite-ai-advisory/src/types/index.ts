@@ -172,6 +172,8 @@ export type AIService = 'claude' | 'gemini' | 'chatgpt' | 'deepseek' | 'groq';
 
 // Unified Advisor Types
 export type AdvisorRole =
+  // Platform Roles
+  | 'Platform Host & Guide' | 'Startup Advisor'
   // Tier 1: Core Strategic Advisors
   | 'Chief Strategy Advisor' | 'Due Diligence Director' | 'Market Intelligence Advisor' | 'Financial Architecture Advisor' | 'Operational Excellence Advisor'
   // Tier 2: Functional Specialists
