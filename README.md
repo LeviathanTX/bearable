@@ -69,9 +69,12 @@ The app will open at `http://localhost:3001`
 - **Frontend**: React 19 + TypeScript
 - **Styling**: TailwindCSS
 - **AI Integration**: OpenAI GPT-4 API
-- **Voice**: Web Speech API
+- **Voice**: Web Speech API + OpenAI TTS
 - **State Management**: React hooks
 - **Testing**: Jest + React Testing Library
+- **Deployment**: Vercel
+- **Error Tracking**: Sentry
+- **CI/CD**: GitHub Actions
 
 ## 🔧 Environment Variables
 
@@ -91,6 +94,14 @@ REACT_APP_ENVIRONMENT=development
 REACT_APP_VOICE_ENABLED=true
 REACT_APP_DEFAULT_VOICE=female
 REACT_APP_SPEECH_RATE=1.0
+REACT_APP_ELEVENLABS_API_KEY=your_elevenlabs_key_here
+
+# Error tracking (optional)
+REACT_APP_SENTRY_DSN=your_sentry_dsn_here
+
+# Database (optional)
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_key
 ```
 
 ## 🎙️ Voice Customization & Setup
@@ -139,18 +150,31 @@ speechSynthesis.speak(new SpeechSynthesisUtterance('Hello, this is a test'))
 
 ## 🚀 Deployment
 
-### Build for Production
-```bash
-npm run build
-```
+**Production:** [https://bearable-health-coach.vercel.app](https://bearable-health-coach.vercel.app)
 
-### Deploy to Vercel (Recommended)
+### Automated Deployments
+- **Main branch** → Auto-deploys to production
+- **Pull Requests** → Auto-generates preview deployments
+- **GitHub Actions** → Runs tests, linting, and type-checking
+
+### Error Monitoring
+Production errors are tracked in [Sentry](https://sentry.io) with:
+- Real-time error alerts
+- Session replay for debugging
+- Performance monitoring
+- User context tracking
+
+### Manual Deployment
 ```bash
+# Build for production
+npm run build
+
+# Deploy to Vercel
 npm install -g vercel
 vercel --prod
 ```
 
-### Deploy to Netlify
+### Alternative: Deploy to Netlify
 ```bash
 npm run build
 # Upload 'build' folder to Netlify
