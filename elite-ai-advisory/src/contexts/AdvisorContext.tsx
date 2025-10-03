@@ -508,8 +508,10 @@ export const AdvisorProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (error) {
         // Table might not exist in bypass mode or demo - that's OK
-        if (error.code === 'PGRST200' || error.message?.includes('does not exist')) {
-          console.log('Custom advisors table not available (expected in bypass mode)');
+        if (error.code === 'PGRST200' || error.code === 'PGRST205' ||
+            error.message?.includes('does not exist') ||
+            error.message?.includes('Could not find the table')) {
+          console.log('✅ Custom advisors table not available (expected in bypass mode)');
           setCustomAdvisors([]);
           return;
         }
@@ -534,8 +536,10 @@ export const AdvisorProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (error) {
         // Table might not exist in bypass mode or demo - that's OK
-        if (error.code === 'PGRST200' || error.message?.includes('does not exist')) {
-          console.log('Conversations table not available (expected in bypass mode)');
+        if (error.code === 'PGRST200' || error.code === 'PGRST205' ||
+            error.message?.includes('does not exist') ||
+            error.message?.includes('Could not find the table')) {
+          console.log('✅ Conversations table not available (expected in bypass mode)');
           setConversations([]);
           return;
         }
