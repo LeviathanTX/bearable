@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const bypassAuth = true; // Set to false to re-enable authentication
 
   const [user, setUser] = useState<User | null>(bypassAuth ? {
-    id: 'bypass-user-123',
+    id: '00000000-0000-0000-0000-000000000001', // Valid UUID for bypass mode
     email: 'LeviathanTX@gmail.com',
     full_name: 'Jeff (Bypass Mode)',
     subscription_tier: 'founder',

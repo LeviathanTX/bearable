@@ -506,10 +506,19 @@ export const AdvisorProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist in bypass mode or demo - that's OK
+        if (error.code === 'PGRST200' || error.message?.includes('does not exist')) {
+          console.log('Custom advisors table not available (expected in bypass mode)');
+          setCustomAdvisors([]);
+          return;
+        }
+        throw error;
+      }
       setCustomAdvisors(data || []);
     } catch (error) {
       console.error('Error loading custom advisors:', error);
+      setCustomAdvisors([]); // Fail gracefully
     }
   };
 
@@ -523,10 +532,19 @@ export const AdvisorProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist in bypass mode or demo - that's OK
+        if (error.code === 'PGRST200' || error.message?.includes('does not exist')) {
+          console.log('Conversations table not available (expected in bypass mode)');
+          setConversations([]);
+          return;
+        }
+        throw error;
+      }
       setConversations(data || []);
     } catch (error) {
       console.error('Error loading conversations:', error);
+      setConversations([]); // Fail gracefully
     }
   };
 
