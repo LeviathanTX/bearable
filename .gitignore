@@ -60,3 +60,4 @@ Thumbs.db
 
 # Local server logs
 server.log
+.vercel
