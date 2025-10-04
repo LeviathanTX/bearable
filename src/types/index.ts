@@ -248,3 +248,37 @@ export interface NotificationSettings {
   };
   preferredChannels: ('app' | 'email' | 'sms' | 'push')[];
 }
+
+// Voice & ElevenLabs Types
+export interface VoiceSettings {
+  stability: number;
+  similarity_boost: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
+
+export interface VoiceOption {
+  elevenlabs_voice_id: string;
+  name: string;
+  description: string;
+  gender: 'male' | 'female' | 'neutral';
+  accent: string;
+  settings: VoiceSettings;
+}
+
+export interface HealthSpecialist {
+  id: string;
+  name: string;
+  title: string;
+  specialization: string;
+  description: string;
+  avatar: string;
+  voices: VoiceOption[];
+  defaultVoiceId: string;
+  personality: string;
+  expertise: string[];
+  isCustom?: boolean;
+  createdBy?: string;
+  isActive?: boolean;
+  mayoClinicAffiliation?: boolean;
+}
