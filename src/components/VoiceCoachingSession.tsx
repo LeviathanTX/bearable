@@ -113,12 +113,14 @@ export const VoiceCoachingSession: React.FC<VoiceCoachingSessionProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      initializeSession();
+      void initializeSession();
     } else {
-      cleanupSession();
+      void cleanupSession();
     }
 
-    return () => cleanupSession();
+    return () => {
+      void cleanupSession();
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -261,8 +263,7 @@ export const VoiceCoachingSession: React.FC<VoiceCoachingSessionProps> = ({
 
     return await aiService.generateResponse(coachingPrompt, {
       userName: user.name,
-      emotionalState: 'coached',
-      responseStyle: 'coaching'
+      emotionalState: 'coached'
     });
   };
 
@@ -414,8 +415,7 @@ Create a 2-sentence summary that:
 Keep it encouraging and specific.`;
 
     const response = await aiService.generateResponse(summaryPrompt, {
-      userName: user.name,
-      responseStyle: 'summary'
+      userName: user.name
     });
 
     return response.content;
