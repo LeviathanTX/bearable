@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { User, AICompanion, AppState, Conversation } from './types';
+import { User, AICompanion, AppState } from './types';
 import { BearCompanion } from './components/BearCompanion';
 import { ChatInterface } from './components/ChatInterface';
 import { ActivityLog } from './components/ActivityLog';
 import { CaregiverDashboard } from './components/CaregiverDashboard';
 import { HealthGoals } from './components/HealthGoals';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { useUserStore } from './stores/userStore';
+import { useConversationStore } from './stores/conversationStore';
+import { useAgentStore } from './stores/agentStore';
 import './App.css';
 
-// Mock data for demonstration
+// Mock data for demonstration (fallback if Supabase not configured)
 const mockUser: User = {
   id: 'demo-user-1',
   name: 'Jane',
@@ -43,45 +46,70 @@ const mockUser: User = {
 };
 
 const mockCompanion: AICompanion = {
-  id: 'care-bear-1',
-  name: 'Wellness Bear',
+  id: 'bearable-personal-ai',
+  name: 'Bearable',
   personality: 'supportive',
-  expertise: ['lifestyle medicine', 'behavioral change', 'Mayo Clinic protocols'],
+  expertise: ['lifestyle medicine', 'behavioral economics', 'Mayo Clinic protocols', 'health coaching'],
   avatar: '🐻',
   isActive: true
 };
 
 function App() {
+  // Zustand stores
+  const { currentUser, setUser, isLoading: userLoading } = useUserStore();
+  const { currentConversation } = useConversationStore();
+  const { initializeAgents } = useAgentStore();
+
+  // Local UI state
   const [appState, setAppState] = useState<AppState>({
     currentUser: null,
     activeCompanion: mockCompanion,
     currentView: 'dashboard',
-    isLoading: false,
+    isLoading: true,
     error: null
   });
 
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [startChatWithVoice, setStartChatWithVoice] = useState(false);
 
   useEffect(() => {
-    // Simulate loading user data
-    setTimeout(() => {
+    // Initialize the 6 specialist agents on app load
+    console.log('🚀 Initializing Bearable AI Health Coach...');
+    console.log('📋 Loading 6 Mayo Clinic Lifestyle Medicine specialists...');
+    initializeAgents();
+
+    // Check for persisted user, otherwise use mock data
+    if (currentUser) {
+      console.log('✅ Loaded user from storage:', currentUser.name);
       setAppState(prev => ({
         ...prev,
-        currentUser: mockUser,
+        currentUser,
         isLoading: false
       }));
-    }, 1000);
+      setShowWelcome(false);
+    } else {
+      console.log('ℹ️ No persisted user found, using demo mode');
+      // Simulate loading for demo
+      setTimeout(() => {
+        setUser(mockUser);
+        setAppState(prev => ({
+          ...prev,
+          currentUser: mockUser,
+          isLoading: false
+        }));
+      }, 1000);
+    }
   }, []);
 
   const handleStartJourney = (userName: string) => {
     const updatedUser = { ...mockUser, name: userName };
+    setUser(updatedUser); // Persist to Zustand
     setAppState(prev => ({
       ...prev,
       currentUser: updatedUser
     }));
     setShowWelcome(false);
+    console.log('👋 Welcome,', userName, '! Your Personal Bearable AI is ready.');
   };
 
   const handleViewChange = (view: AppState['currentView']) => {
@@ -190,7 +218,10 @@ function App() {
             user={appState.currentUser}
             companion={appState.activeCompanion}
             conversation={currentConversation}
-            onConversationUpdate={setCurrentConversation}
+            onConversationUpdate={(conv) => {
+              // Legacy prop handler - conversation is now managed by Zustand
+              console.log('Conversation updated:', conv?.id);
+            }}
             startWithVoice={startChatWithVoice}
           />
         )}

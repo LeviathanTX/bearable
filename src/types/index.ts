@@ -282,3 +282,6 @@ export interface HealthSpecialist {
   isActive?: boolean;
   mayoClinicAffiliation?: boolean;
 }
+
+// Export consent-related types
+export * from './consent';
