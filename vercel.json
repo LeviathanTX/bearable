@@ -1,0 +1,15 @@
+{
+  "buildCommand": "TSC_COMPILE_ON_ERROR=true CI=false npm run build",
+  "outputDirectory": "build",
+  "framework": "create-react-app",
+  "env": {
+    "TSC_COMPILE_ON_ERROR": "true",
+    "CI": "false"
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
