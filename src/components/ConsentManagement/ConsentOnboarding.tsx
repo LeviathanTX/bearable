@@ -40,7 +40,7 @@ export const ConsentOnboarding: React.FC<ConsentOnboardingProps> = ({
   // Essential AI consent state
   const [essentialAIEnabled, setEssentialAIEnabled] = useState(true);
   const [essentialDataCategories, setEssentialDataCategories] = useState<Set<DataCategory>>(
-    new Set(['demographics', 'health_metrics', 'activity_logs'])
+    new Set(['demographics', 'health_metrics', 'activity_logs'] as DataCategory[])
   );
 
   // AI Personalization consent state
@@ -55,7 +55,7 @@ export const ConsentOnboarding: React.FC<ConsentOnboardingProps> = ({
   // Caregiver consent state
   const [caregiverEnabled, setCaregiverEnabled] = useState(false);
   const [caregiverDataSharing, setCaregiverDataSharing] = useState<Set<DataCategory>>(
-    new Set(['activity_logs', 'ai_recommendations'])
+    new Set(['activity_logs', 'ai_recommendations'] as DataCategory[])
   );
 
   // Third-party integration state

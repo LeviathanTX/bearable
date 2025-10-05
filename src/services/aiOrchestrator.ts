@@ -189,7 +189,7 @@ Synthesize any specialist advice into YOUR response naturally - don't just quote
     ];
 
     for (const pattern of actionPatterns) {
-      const matches = response.matchAll(pattern);
+      const matches = Array.from(response.matchAll(pattern));
       for (const match of matches) {
         if (match[1] && match[1].length > 10 && match[1].length < 100) {
           actions.push(match[1].trim());

@@ -289,6 +289,7 @@ export const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({ userId }) =>
         timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000),
         success: false,
         denialReason: 'No active consent',
+        purpose: 'Unauthorized access attempt',
       },
     ];
 
