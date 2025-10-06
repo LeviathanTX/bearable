@@ -1,8 +1,7 @@
-import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
 import { useAgentStore, type AgentSpecialty, type AgentConsultation } from '../stores/agentStore';
 import { useConversationStore } from '../stores/conversationStore';
 import { useUserStore } from '../stores/userStore';
+import { multiProviderAI, type AIMessage } from './multiProviderAI';
 import type { Message } from '../types';
 
 export interface AIResponse {
@@ -14,23 +13,8 @@ export interface AIResponse {
 }
 
 export class AIOrchestrator {
-  private primaryAI: ChatOpenAI;
-  private routerAI: ChatOpenAI;
-
   constructor() {
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY || '';
-
-    this.primaryAI = new ChatOpenAI({
-      modelName: 'gpt-4o',
-      temperature: 0.7,
-      openAIApiKey: apiKey,
-    });
-
-    this.routerAI = new ChatOpenAI({
-      modelName: 'gpt-4o-mini',
-      temperature: 0.3,
-      openAIApiKey: apiKey,
-    });
+    // No initialization needed - multiProviderAI handles all providers
   }
 
   /**
@@ -80,12 +64,16 @@ export class AIOrchestrator {
       throw new Error(`Agent ${agentId} not found`);
     }
 
-    const messages = [
-      new SystemMessage(agent.systemPrompt),
-      new HumanMessage(`As a specialist consultant, please provide your expert recommendation for this user query:\n\n"${query}"\n\nProvide a concise, actionable response (2-3 sentences).`),
+    const messages: AIMessage[] = [
+      { role: 'system', content: agent.systemPrompt },
+      { role: 'user', content: `As a specialist consultant, please provide your expert recommendation for this user query:\n\n"${query}"\n\nProvide a concise, actionable response (2-3 sentences).` },
     ];
 
-    const response = await this.primaryAI.invoke(messages);
+    const aiResponse = await multiProviderAI.generate(messages, {
+      provider: agent.aiProvider,
+      model: agent.aiModel,
+      apiKey: agent.customApiKey,
+    });
 
     const consultation: AgentConsultation = {
       id: `consultation-${Date.now()}-${agentId}`,
@@ -93,7 +81,7 @@ export class AIOrchestrator {
       agentName: agent.name,
       specialty: agent.specialty,
       query,
-      response: response.content as string,
+      response: aiResponse.content,
       confidence: 0.85,
       timestamp: new Date(),
       usedInResponse: true,
@@ -106,7 +94,7 @@ export class AIOrchestrator {
   }
 
   /**
-   * Generate final response from Personal Bearable AI
+   * Generate final response from Personal Bearable AI (using Claude Sonnet 4)
    */
   private async generateResponse(
     userMessage: string,
@@ -120,10 +108,10 @@ export class AIOrchestrator {
     }
 
     // Build conversation context
-    const messages = [];
+    const messages: AIMessage[] = [];
 
     // System prompt for Personal Bearable AI
-    messages.push(new SystemMessage(`You are Bearable, ${currentUser.name}'s personal AI health companion. You are warm, empathetic, and supportive while being evidence-based and actionable.
+    const systemPrompt = `You are Bearable, ${currentUser.name}'s personal AI health companion. You are warm, empathetic, and supportive while being evidence-based and actionable.
 
 Your core principles:
 1. **Lifestyle Medicine First**: Focus on the 6 pillars (nutrition, physical activity, sleep, stress management, social connection, substance avoidance)
@@ -142,24 +130,28 @@ User's current health context:
 
 ${consultations.length > 0 ? `\nYou have consulted with specialist agents. Here are their recommendations:\n\n${consultations.map(c => `**${c.agentName}** (${c.specialty}):\n${c.response}`).join('\n\n')}` : ''}
 
-Synthesize any specialist advice into YOUR response naturally - don't just quote them. Make it feel like a cohesive conversation from you, Bearable.`));
+Synthesize any specialist advice into YOUR response naturally - don't just quote them. Make it feel like a cohesive conversation from you, Bearable.`;
+
+    messages.push({ role: 'system', content: systemPrompt });
 
     // Add recent conversation history (last 5 messages)
     const recentMessages = conversationHistory.slice(-5);
     for (const msg of recentMessages) {
-      if (msg.role === 'user') {
-        messages.push(new HumanMessage(msg.content));
-      } else if (msg.role === 'assistant') {
-        messages.push(new AIMessage(msg.content));
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        messages.push({ role: msg.role, content: msg.content });
       }
     }
 
     // Add current user message
-    messages.push(new HumanMessage(userMessage));
+    messages.push({ role: 'user', content: userMessage });
 
-    // Generate response
-    const response = await this.primaryAI.invoke(messages);
-    const content = response.content as string;
+    // Generate response with Claude Sonnet 4 (Personal Bearable AI default)
+    const aiResponse = await multiProviderAI.generate(messages, {
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+    });
+
+    const content = aiResponse.content;
 
     // Extract suggested actions (simple pattern matching for now)
     const suggestedActions = this.extractSuggestedActions(content);
@@ -225,16 +217,18 @@ Synthesize any specialist advice into YOUR response naturally - don't just quote
    * Generate suggested follow-up responses
    */
   async generateSuggestedResponses(context: string): Promise<string[]> {
-    const messages = [
-      new SystemMessage('Generate 3 short, natural follow-up questions or responses a user might say in this health conversation. Keep each under 10 words. Return as JSON array.'),
-      new HumanMessage(context),
+    const messages: AIMessage[] = [
+      { role: 'system', content: 'Generate 3 short, natural follow-up questions or responses a user might say in this health conversation. Keep each under 10 words. Return as JSON array.' },
+      { role: 'user', content: context },
     ];
 
-    const response = await this.routerAI.invoke(messages);
-    const content = response.content as string;
-
     try {
-      const suggestions = JSON.parse(content);
+      const response = await multiProviderAI.generate(messages, {
+        provider: 'openai',
+        model: 'gpt-4o-mini', // Use cheap model for routing
+      });
+
+      const suggestions = JSON.parse(response.content);
       return Array.isArray(suggestions) ? suggestions.slice(0, 3) : [];
     } catch {
       // Fallback suggestions

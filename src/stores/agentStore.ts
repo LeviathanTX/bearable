@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import type { AIProvider } from '../services/multiProviderAI';
 
 export type AgentSpecialty =
   | 'nutrition'
@@ -20,6 +21,10 @@ export interface HealthAgent {
   expertise: string[];
   consultationCount: number;
   lastConsulted?: Date;
+  // AI Provider configuration
+  aiProvider: AIProvider;
+  aiModel: string;
+  customApiKey?: string; // Optional user-provided API key
 }
 
 export interface AgentConsultation {
@@ -62,6 +67,8 @@ const defaultAgents: HealthAgent[] = [
     isActive: true,
     expertise: ['Mediterranean diet', 'Diabetes management', 'Heart-healthy eating', 'Weight management', 'Anti-inflammatory foods'],
     consultationCount: 0,
+    aiProvider: 'anthropic',
+    aiModel: 'claude-sonnet-4-20250514',
   },
   {
     id: 'physical-activity-coach',
@@ -72,6 +79,8 @@ const defaultAgents: HealthAgent[] = [
     isActive: true,
     expertise: ['Progressive training', 'Cardiac rehab', 'Senior fitness', 'Injury prevention', 'Movement as medicine'],
     consultationCount: 0,
+    aiProvider: 'anthropic',
+    aiModel: 'claude-3-5-haiku-20241022',
   },
   {
     id: 'sleep-optimization-expert',
@@ -82,6 +91,8 @@ const defaultAgents: HealthAgent[] = [
     isActive: true,
     expertise: ['Circadian rhythm', 'Insomnia CBT', 'Sleep apnea', 'Sleep hygiene', 'Chronotype optimization'],
     consultationCount: 0,
+    aiProvider: 'anthropic',
+    aiModel: 'claude-sonnet-4-20250514',
   },
   {
     id: 'stress-management-therapist',
@@ -92,6 +103,8 @@ const defaultAgents: HealthAgent[] = [
     isActive: true,
     expertise: ['Mindfulness-based stress reduction', 'CBT techniques', 'Resilience training', 'Emotional regulation', 'Burnout prevention'],
     consultationCount: 0,
+    aiProvider: 'openai',
+    aiModel: 'gpt-4o',
   },
   {
     id: 'social-connection-facilitator',
@@ -102,6 +115,8 @@ const defaultAgents: HealthAgent[] = [
     isActive: true,
     expertise: ['Loneliness prevention', 'Communication skills', 'Community engagement', 'Support networks', 'Social anxiety'],
     consultationCount: 0,
+    aiProvider: 'anthropic',
+    aiModel: 'claude-3-5-haiku-20241022',
   },
   {
     id: 'substance-avoidance-counselor',
@@ -112,6 +127,8 @@ const defaultAgents: HealthAgent[] = [
     isActive: true,
     expertise: ['Smoking cessation', 'Alcohol moderation', 'Harm reduction', 'Relapse prevention', 'Recovery support'],
     consultationCount: 0,
+    aiProvider: 'openai',
+    aiModel: 'gpt-4o-mini',
   },
 ];
 
