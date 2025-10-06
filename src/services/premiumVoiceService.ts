@@ -115,7 +115,7 @@ export class PremiumVoiceService {
     return enhanced;
   }
 
-  // Generate voice using OpenAI TTS API
+  // Generate voice using ElevenLabs API
   async generateVoice(
     text: string,
     options: VoiceGenerationOptions = { character: PremiumVoiceService.WELLNESS_BEAR }
@@ -125,35 +125,52 @@ export class PremiumVoiceService {
     // Enhance text for natural speech
     const enhancedText = this.enhanceTextForSpeech(text, emotionalTone);
 
-    // Note: API key is handled by the local server, not needed here
+    const apiKey = process.env.REACT_APP_ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      throw new Error('ElevenLabs API key not configured');
+    }
+
+    // Map character to ElevenLabs voice ID
+    const voiceIdMap: Record<string, string> = {
+      'Wellness Bear': 'XB0fDUnXU5powFXDhCwa', // Charlotte - caring
+      'Professional Coach': 'pNInz6obpgDQGcFmaJgB', // Adam - professional
+      'Energetic Guide': 'jsCqWAovK2LkecY7zXl4', // Freya - energetic
+      'Calm Therapist': 'AZnzlk1XvdvUeBnXmlld', // Domi - calm
+    };
+
+    const voiceId = voiceIdMap[character.name] || 'XB0fDUnXU5powFXDhCwa'; // Default to Charlotte
 
     try {
-      console.log(`🎙️ Calling local voice API for: "${enhancedText.substring(0, 50)}..."`);
+      console.log(`🎙️ Generating voice with ElevenLabs: "${enhancedText.substring(0, 50)}..."`);
 
-      const response = await fetch('http://localhost:3002/api/voice/generate', {
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'xi-api-key': apiKey,
         },
         body: JSON.stringify({
           text: enhancedText,
-          voice: character.openaiVoice,
-          speed: character.speed,
-          model: priority === 'quality' ? 'tts-1-hd' : 'tts-1',
-          response_format: 'mp3'
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.2,
+            use_speaker_boost: false
+          }
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Local voice API error:', response.status, errorText);
-        throw new Error(`Voice generation failed: ${response.statusText} - ${errorText}`);
+        console.error('ElevenLabs API error:', response.status, errorText);
+        throw new Error(`Voice generation failed: ${response.statusText}`);
       }
 
-      console.log(`✅ Premium voice generated successfully with ${character.openaiVoice} (speed: ${character.speed})`);
+      console.log(`✅ Voice generated successfully with ${character.name}`);
       return await response.blob();
     } catch (error) {
-      console.error('Premium voice generation error:', error);
+      console.error('Voice generation error:', error);
       throw error;
     }
   }
