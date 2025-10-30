@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python agent.py start"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10
+
+[environment]
+PYTHON_VERSION = "3.9"
