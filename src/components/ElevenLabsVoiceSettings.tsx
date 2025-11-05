@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { voiceService } from '../services/elevenLabsVoiceService';
+import { voicePreferences } from '../services/voicePreferences';
 
 interface ElevenLabsVoiceSettingsProps {
   isOpen: boolean;
@@ -12,13 +13,17 @@ export const ElevenLabsVoiceSettings: React.FC<ElevenLabsVoiceSettingsProps> = (
   onClose,
   onSettingsChange
 }) => {
-  const [selectedSpecialistId, setSelectedSpecialistId] = useState('dr-maya-wellness');
-  const [selectedVoiceId, setSelectedVoiceId] = useState('pNInz6obpgDQGcFmaJgB'); // Default to Adam
+  // Load saved preferences on mount
+  const savedPrefs = voicePreferences.load();
+  const [selectedSpecialistId, setSelectedSpecialistId] = useState(savedPrefs.defaultSpecialistId);
+  const [selectedVoiceId, setSelectedVoiceId] = useState(
+    savedPrefs.specialistVoiceMap[savedPrefs.defaultSpecialistId] || 'pNInz6obpgDQGcFmaJgB'
+  );
   const [voiceSettings, setVoiceSettings] = useState({
-    stability: 0.5,
-    similarity_boost: 0.75,
-    style: 0.2,
-    use_speaker_boost: false
+    stability: savedPrefs.voiceSettings.stability || 0.5,
+    similarity_boost: savedPrefs.voiceSettings.similarity_boost || 0.75,
+    style: savedPrefs.voiceSettings.style || 0.2,
+    use_speaker_boost: savedPrefs.voiceSettings.use_speaker_boost || false
   });
   const [isTesting, setIsTesting] = useState(false);
   const [testPhrase, setTestPhrase] = useState(
@@ -31,10 +36,14 @@ export const ElevenLabsVoiceSettings: React.FC<ElevenLabsVoiceSettingsProps> = (
   const selectedVoice = availableVoices.find(v => v.elevenlabs_voice_id === selectedVoiceId);
 
   // Update selected voice when specialist changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedSpecialist) {
-      setSelectedVoiceId(selectedSpecialist.defaultVoiceId);
-      const defaultVoice = selectedSpecialist.voices.find(v => v.elevenlabs_voice_id === selectedSpecialist.defaultVoiceId);
+      // Try to load saved voice preference for this specialist
+      const savedVoiceId = voicePreferences.getPreferredVoiceForSpecialist(selectedSpecialistId);
+      const voiceIdToUse = savedVoiceId || selectedSpecialist.defaultVoiceId;
+      setSelectedVoiceId(voiceIdToUse);
+
+      const defaultVoice = selectedSpecialist.voices.find(v => v.elevenlabs_voice_id === voiceIdToUse);
       if (defaultVoice) {
         setVoiceSettings({
           stability: defaultVoice.settings.stability,
@@ -60,6 +69,16 @@ export const ElevenLabsVoiceSettings: React.FC<ElevenLabsVoiceSettingsProps> = (
   };
 
   const handleSaveSettings = () => {
+    // Save to localStorage for persistence
+    voicePreferences.save({
+      defaultSpecialistId: selectedSpecialistId,
+      specialistVoiceMap: {
+        ...voicePreferences.load().specialistVoiceMap,
+        [selectedSpecialistId]: selectedVoiceId
+      },
+      voiceSettings
+    });
+
     if (onSettingsChange) {
       onSettingsChange({
         defaultSpecialist: selectedSpecialistId,
@@ -67,6 +86,8 @@ export const ElevenLabsVoiceSettings: React.FC<ElevenLabsVoiceSettingsProps> = (
         voiceSettings
       });
     }
+
+    console.log('✅ Voice preferences saved:', voicePreferences.getSummary());
     onClose();
   };
 

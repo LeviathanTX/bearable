@@ -4,6 +4,7 @@
 import { PremiumVoiceService, VoiceCharacter, EmotionalTone } from './premiumVoiceService';
 import { VoiceService } from './voiceService';
 
+import { voicePreferences } from './voicePreferences';
 export interface ConversationState {
   isActive: boolean;
   currentSpeaker: 'user' | 'assistant' | 'none';
@@ -76,14 +77,18 @@ export class ConversationalVoiceService {
   private onError?: (error: string, context?: any) => void;
 
   constructor(options: Partial<ConversationOptions> = {}) {
+    // Load saved preferences for pacing
+    const savedPacing = voicePreferences.getConversationPacing();
+
     this.options = {
-      maxTurnDuration: 30000, // 30 seconds max per turn
-      silenceTimeoutUser: 2000, // 2 seconds of silence before user turn ends
-      silenceTimeoutAssistant: 1500, // 1.5 seconds before user can interrupt
-      enableInterruptions: true,
-      adaptivePacing: true,
-      emotionalAdaptation: true,
-      conversationStyle: 'coaching',
+      // Optimized defaults for health coaching conversations
+      maxTurnDuration: savedPacing.maxTurnDuration || 45000, // 45s allows thoughtful responses
+      silenceTimeoutUser: savedPacing.silenceTimeoutUser || 2500, // 2.5s gives time to think
+      silenceTimeoutAssistant: 1200, // 1.2s - quick enough to feel responsive
+      enableInterruptions: savedPacing.enableInterruptions ?? true, // Natural conversation flow
+      adaptivePacing: savedPacing.adaptivePacing ?? true, // Adjust to user engagement
+      emotionalAdaptation: true, // Always adapt tone to context
+      conversationStyle: 'coaching', // Default to coaching style
       ...options
     };
 
