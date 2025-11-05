@@ -6,6 +6,7 @@ import { ActivityLog } from './components/ActivityLog';
 import { CaregiverDashboard } from './components/CaregiverDashboard';
 import { HealthGoals } from './components/HealthGoals';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { VoiceDemo } from './components/VoiceDemo';
 import './App.css';
 
 // Mock data for demonstration
@@ -129,7 +130,8 @@ function App() {
               { id: 'chat', label: '💬 Chat', view: 'chat' as const },
               { id: 'goals', label: '🎯 Goals', view: 'goals' as const },
               { id: 'activity', label: '📊 Activity', view: 'activity' as const },
-              { id: 'caregivers', label: '👥 Caregivers', view: 'caregivers' as const }
+              { id: 'caregivers', label: '👥 Caregivers', view: 'caregivers' as const },
+              { id: 'voice-demo', label: '🎤 Voice Demo', view: 'voice-demo' as const }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -205,6 +207,10 @@ function App() {
 
         {appState.currentView === 'caregivers' && (
           <CaregiverDashboard userId={appState.currentUser.id} />
+        )}
+
+        {appState.currentView === 'voice-demo' && (
+          <VoiceDemo />
         )}
       </main>
 

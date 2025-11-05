@@ -221,7 +221,7 @@ export interface ProtocolPhase {
 export interface AppState {
   currentUser: User | null;
   activeCompanion: AICompanion | null;
-  currentView: 'dashboard' | 'chat' | 'goals' | 'activity' | 'caregivers' | 'settings';
+  currentView: 'dashboard' | 'chat' | 'goals' | 'activity' | 'caregivers' | 'settings' | 'voice-demo';
   isLoading: boolean;
   error: string | null;
 }
