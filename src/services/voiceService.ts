@@ -64,15 +64,33 @@ export class VoiceService {
   }
 
   private initializeSpeechRecognition() {
-    // Check if SpeechRecognition is available
+    // Check if SpeechRecognition is available (Safari uses webkit prefix)
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (SpeechRecognition) {
-      this.speechRecognition = new SpeechRecognition();
-      this.speechRecognition.continuous = true;
-      this.speechRecognition.interimResults = true;
-      this.speechRecognition.lang = 'en-US';
-      this.speechRecognition.maxAlternatives = 1;
+      try {
+        this.speechRecognition = new SpeechRecognition();
+        this.speechRecognition.continuous = true;
+        this.speechRecognition.interimResults = true;
+        this.speechRecognition.lang = 'en-US';
+        this.speechRecognition.maxAlternatives = 1;
+
+        // Safari-specific: handle permission errors gracefully
+        this.speechRecognition.onerror = (event: any) => {
+          if (event.error === 'not-allowed') {
+            console.warn('🎤 Microphone permission denied. Please allow microphone access in Safari settings.');
+          } else if (event.error === 'network') {
+            console.warn('🌐 Network error during speech recognition. Check your connection.');
+          }
+        };
+
+        console.log('✅ Speech recognition initialized (Safari-compatible)');
+      } catch (error) {
+        console.error('❌ Failed to initialize speech recognition:', error);
+        this.speechRecognition = null;
+      }
+    } else {
+      console.warn('⚠️ Speech Recognition API not supported in this browser');
     }
   }
 
@@ -81,6 +99,21 @@ export class VoiceService {
     this.voices = this.speechSynthesis.getVoices();
 
     // If voices aren't loaded yet, wait for them
+    // Safari-specific: voices may not load immediately
+    if (this.voices.length === 0) {
+      this.speechSynthesis.onvoiceschanged = () => {
+        this.voices = this.speechSynthesis.getVoices();
+        console.log(`✅ Loaded ${this.voices.length} voices (Safari-compatible)`);
+      };
+
+      // Safari workaround: manually trigger voices loading
+      setTimeout(() => {
+        this.voices = this.speechSynthesis.getVoices();
+        if (this.voices.length > 0) {
+          console.log(`✅ Loaded ${this.voices.length} voices after delay (Safari workaround)`);
+        }
+      }, 100);
+    }
     if (this.voices.length === 0) {
       this.speechSynthesis.onvoiceschanged = () => {
         this.voices = this.speechSynthesis.getVoices();
