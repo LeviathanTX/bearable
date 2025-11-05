@@ -35,14 +35,18 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "type-check": "tsc --noEmit",
-    "verify": "npm run lint && npm run type-check && npm run test",
+    "verify": "npm run format:check && npm run lint && npm run type-check && npm run test",
     "claude:fix": "claude -p 'Run npm run verify and fix any issues found'",
-    "claude:test-loop": "claude /test-loop"
+    "claude:test-loop": "claude /test-loop",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
+      "react-app/jest",
+      "prettier"
     ]
   },
   "browserslist": {
@@ -60,7 +64,22 @@
   "devDependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
+    "eslint-config-prettier": "^10.1.8",
     "express": "^5.1.0",
-    "node-fetch": "^3.3.2"
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "node-fetch": "^3.3.2",
+    "prettier": "^3.6.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write",
+      "eslint --fix",
+      "git add"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write",
+      "git add"
+    ]
   }
 }
